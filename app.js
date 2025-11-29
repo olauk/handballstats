@@ -3,9 +3,10 @@
 // ============================================
 const APP = {
     currentUser: null,
-    page: 'login', // 'login', 'setup', 'match'
+    page: 'login', // 'login', 'setup', 'match', 'history'
     homeTeam: 'Hjemmelag',
     awayTeam: 'Bortelag',
+    matchDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
     currentHalf: 1,
     players: [{ id: 1, name: 'Spiller 1', number: 1, isKeeper: false }],
     opponents: [{ id: 1, name: 'Motstander 1', number: 1 }],
@@ -15,7 +16,9 @@ const APP = {
     tempShot: null,
     selectedResult: null,
     showShotDetails: false,
-    shotDetailsData: null
+    shotDetailsData: null,
+    completedMatches: [], // Array of completed matches
+    viewingMatch: null // For viewing a specific completed match
 };
 
 // ============================================
@@ -611,6 +614,133 @@ function renderShotDetailsPopupContent() {
 // ============================================
 // DATA MANAGEMENT
 // ============================================
+function loadPlayersFromFile() {
+    const fileInput = document.getElementById('playersFileInput');
+    fileInput.click();
+}
+
+function loadOpponentsFromFile() {
+    const fileInput = document.getElementById('opponentsFileInput');
+    fileInput.click();
+}
+
+function handlePlayersFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const content = e.target.result;
+            let players = [];
+
+            if (file.name.endsWith('.json')) {
+                // JSON format: [{id, name, number, isKeeper}, ...]
+                players = JSON.parse(content);
+            } else if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+                // CSV/TXT format: number,name,isKeeper (one per line)
+                const lines = content.split('\n').filter(line => line.trim());
+                players = lines.map((line, index) => {
+                    const [number, name, isKeeper] = line.split(',').map(s => s.trim());
+                    return {
+                        id: Date.now() + index,
+                        name: name || `Spiller ${index + 1}`,
+                        number: parseInt(number) || index + 1,
+                        isKeeper: isKeeper === 'true' || isKeeper === '1'
+                    };
+                });
+            }
+
+            if (players.length > 0) {
+                APP.players = players;
+                saveToLocalStorage();
+                render();
+                alert(`${players.length} spillere lastet inn!`);
+            }
+        } catch (error) {
+            alert('Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\nFormat JSON: [{"id":1,"name":"Navn","number":1,"isKeeper":false}]\nFormat CSV/TXT: nummer,navn,isKeeper');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // Reset input
+}
+
+function handleOpponentsFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const content = e.target.result;
+            let opponents = [];
+
+            if (file.name.endsWith('.json')) {
+                opponents = JSON.parse(content);
+            } else if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+                const lines = content.split('\n').filter(line => line.trim());
+                opponents = lines.map((line, index) => {
+                    const [number, name] = line.split(',').map(s => s.trim());
+                    return {
+                        id: Date.now() + index,
+                        name: name || `Motstander ${index + 1}`,
+                        number: parseInt(number) || index + 1
+                    };
+                });
+            }
+
+            if (opponents.length > 0) {
+                APP.opponents = opponents;
+                saveToLocalStorage();
+                render();
+                alert(`${opponents.length} motstandere lastet inn!`);
+            }
+        } catch (error) {
+            alert('Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\nFormat JSON: [{"id":1,"name":"Navn","number":1}]\nFormat CSV/TXT: nummer,navn');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // Reset input
+}
+
+function finishMatch() {
+    if (APP.events.length === 0) {
+        if (!confirm('Ingen skudd er registrert. Vil du fortsatt avslutte kampen?')) {
+            return;
+        }
+    }
+
+    const matchData = {
+        id: Date.now(),
+        matchDate: APP.matchDate,
+        homeTeam: APP.homeTeam,
+        awayTeam: APP.awayTeam,
+        players: JSON.parse(JSON.stringify(APP.players)),
+        opponents: JSON.parse(JSON.stringify(APP.opponents)),
+        events: JSON.parse(JSON.stringify(APP.events)),
+        completedAt: new Date().toISOString()
+    };
+
+    APP.completedMatches.push(matchData);
+
+    // Reset match data
+    APP.events = [];
+    APP.currentHalf = 1;
+    APP.activeKeeper = null;
+    APP.tempShot = null;
+    APP.selectedResult = null;
+    APP.mode = 'attack';
+
+    // Invalider cache
+    PERFORMANCE.invalidateStatsCache();
+
+    saveToLocalStorageImmediate();
+
+    alert('Kampen er avsluttet og lagret!');
+    APP.page = 'history';
+    render();
+}
+
 function exportData() {
     const data = {
         players: APP.players,
@@ -618,14 +748,32 @@ function exportData() {
         events: APP.events,
         homeTeam: APP.homeTeam,
         awayTeam: APP.awayTeam,
+        matchDate: APP.matchDate,
         timestamp: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `handball-stats-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `handball-stats-${APP.homeTeam}-${APP.matchDate}.json`;
     a.click();
+}
+
+function deleteCompletedMatch(matchId) {
+    if (confirm('Er du sikker på at du vil slette denne kampen?')) {
+        APP.completedMatches = APP.completedMatches.filter(m => m.id !== matchId);
+        saveToLocalStorageImmediate();
+        render();
+    }
+}
+
+function viewCompletedMatch(matchId) {
+    const match = APP.completedMatches.find(m => m.id === matchId);
+    if (match) {
+        APP.viewingMatch = match;
+        APP.page = 'viewMatch';
+        render();
+    }
 }
 
 function resetMatch() {
@@ -647,15 +795,19 @@ function resetMatch() {
 function render() {
     const app = document.getElementById('app');
     if (!app) return;
-    
+
     if (APP.page === 'login') {
         app.innerHTML = renderLoginPage();
     } else if (APP.page === 'setup') {
         app.innerHTML = renderSetupPage();
+    } else if (APP.page === 'history') {
+        app.innerHTML = renderHistoryPage();
+    } else if (APP.page === 'viewMatch') {
+        app.innerHTML = renderViewMatchPage();
     } else {
         app.innerHTML = renderMatchPage();
     }
-    
+
     attachEventListeners();
 }
 
@@ -723,19 +875,24 @@ function renderSetupPage() {
     return `
         <div class="container">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
                     <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81;">
                         Oppsett av kamp
                     </h1>
-                    <button class="btn btn-secondary" data-action="logout">
-                        Logg ut
-                    </button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-blue" data-action="viewHistory">
+                            📋 Tidligere kamper
+                        </button>
+                        <button class="btn btn-secondary" data-action="logout">
+                            Logg ut
+                        </button>
+                    </div>
                 </div>
-                
+
                 <div class="grid-2 mb-6">
                     <div>
                         <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Hjemmelag</label>
-                        <input type="text" id="homeTeamInput" value="${APP.homeTeam}" 
+                        <input type="text" id="homeTeamInput" value="${APP.homeTeam}"
                                data-field="homeTeam" placeholder="Navn på hjemmelag">
                     </div>
                     <div>
@@ -743,6 +900,12 @@ function renderSetupPage() {
                         <input type="text" id="awayTeamInput" value="${APP.awayTeam}"
                                data-field="awayTeam" placeholder="Navn på bortelag">
                     </div>
+                </div>
+
+                <div class="mb-6">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Kampdato</label>
+                    <input type="date" id="matchDateInput" value="${APP.matchDate}"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;">
                 </div>
 
                 <div class="mb-6">
@@ -768,9 +931,15 @@ function renderSetupPage() {
                             </div>
                         `).join('')}
                     </div>
-                    <button class="btn btn-blue" data-action="addPlayer" style="width: 100%; font-size: 1.125rem;">
-                        + Legg til spiller
-                    </button>
+                    <div class="grid-2" style="gap: 0.5rem;">
+                        <button class="btn btn-blue" data-action="addPlayer" style="width: 100%; font-size: 1.125rem;">
+                            + Legg til spiller
+                        </button>
+                        <button class="btn btn-secondary" data-action="loadPlayersFile" style="width: 100%; font-size: 1.125rem;">
+                            📁 Last fra fil
+                        </button>
+                    </div>
+                    <input type="file" id="playersFileInput" accept=".json,.txt,.csv" style="display: none;">
                 </div>
 
                 <div class="mb-6">
@@ -791,9 +960,15 @@ function renderSetupPage() {
                             </div>
                         `).join('')}
                     </div>
-                    <button class="btn btn-orange" data-action="addOpponent" style="width: 100%; font-size: 1.125rem;">
-                        + Legg til spiller
-                    </button>
+                    <div class="grid-2" style="gap: 0.5rem;">
+                        <button class="btn btn-orange" data-action="addOpponent" style="width: 100%; font-size: 1.125rem;">
+                            + Legg til spiller
+                        </button>
+                        <button class="btn btn-secondary" data-action="loadOpponentsFile" style="width: 100%; font-size: 1.125rem;">
+                            📁 Last fra fil
+                        </button>
+                    </div>
+                    <input type="file" id="opponentsFileInput" accept=".json,.txt,.csv" style="display: none;">
                 </div>
 
                 <button class="btn btn-success" data-action="startMatch"
@@ -824,12 +999,15 @@ function renderMatchPage() {
                             ${APP.homeTeam} vs ${APP.awayTeam}
                         </h1>
                     </div>
-                    <div class="flex" style="gap: 0.5rem;">
-                        <button class="btn btn-danger" data-action="resetMatch">
-                            🔄 Nullstill
+                    <div class="flex" style="gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn btn-warning" data-action="finishMatch">
+                            ✅ Avslutt kamp
                         </button>
                         <button class="btn btn-success" data-action="exportData">
                             💾 Eksporter
+                        </button>
+                        <button class="btn btn-danger" data-action="resetMatch">
+                            🔄 Nullstill
                         </button>
                         <button class="btn btn-secondary" data-action="logout">
                             Logg ut
@@ -1205,6 +1383,157 @@ function renderShotDetailsPopup() {
     `;
 }
 
+function renderHistoryPage() {
+    const sortedMatches = [...APP.completedMatches].sort((a, b) =>
+        new Date(b.matchDate) - new Date(a.matchDate)
+    );
+
+    return `
+        <div class="container">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81;">
+                        Tidligere kamper
+                    </h1>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-blue" data-action="backToSetup">
+                            ← Tilbake til oppsett
+                        </button>
+                        <button class="btn btn-secondary" data-action="logout">
+                            Logg ut
+                        </button>
+                    </div>
+                </div>
+
+                ${sortedMatches.length === 0 ? `
+                    <div style="text-align: center; padding: 4rem 2rem;">
+                        <h2 style="font-size: 1.5rem; color: #6b7280; margin-bottom: 1rem;">
+                            Ingen kamper registrert ennå
+                        </h2>
+                        <p style="color: #9ca3af; margin-bottom: 2rem;">
+                            Avsluttede kamper vil vises her
+                        </p>
+                        <button class="btn btn-primary" data-action="backToSetup">
+                            Start ny kamp
+                        </button>
+                    </div>
+                ` : `
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Dato</th>
+                                    <th>Hjemmelag</th>
+                                    <th>Bortelag</th>
+                                    <th class="text-center">Skudd</th>
+                                    <th class="text-center">Mål</th>
+                                    <th class="text-center">Handlinger</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sortedMatches.map(match => {
+                                    const totalShots = match.events.filter(e =>
+                                        e.mode === 'attack' && e.player
+                                    ).length;
+                                    const totalGoals = match.events.filter(e =>
+                                        e.mode === 'attack' && e.result === 'mål'
+                                    ).length;
+
+                                    return `
+                                        <tr>
+                                            <td>${new Date(match.matchDate).toLocaleDateString('no-NO')}</td>
+                                            <td style="font-weight: 600;">${match.homeTeam}</td>
+                                            <td style="font-weight: 600;">${match.awayTeam}</td>
+                                            <td class="text-center">${totalShots}</td>
+                                            <td class="text-center" style="font-weight: 700; color: #059669;">${totalGoals}</td>
+                                            <td class="text-center">
+                                                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                                    <button class="btn btn-primary" data-action="viewMatch" data-match-id="${match.id}"
+                                                            style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                                        👁️ Vis
+                                                    </button>
+                                                    <button class="btn btn-danger" data-action="deleteMatch" data-match-id="${match.id}"
+                                                            style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                                        🗑️ Slett
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function renderViewMatchPage() {
+    if (!APP.viewingMatch) {
+        return renderHistoryPage();
+    }
+
+    const match = APP.viewingMatch;
+
+    // Temporarily set APP data to match data for rendering
+    const originalData = {
+        homeTeam: APP.homeTeam,
+        awayTeam: APP.awayTeam,
+        players: APP.players,
+        opponents: APP.opponents,
+        events: APP.events,
+        mode: APP.mode
+    };
+
+    APP.homeTeam = match.homeTeam;
+    APP.awayTeam = match.awayTeam;
+    APP.players = match.players;
+    APP.opponents = match.opponents;
+    APP.events = match.events;
+
+    const statsContent = renderStatistics();
+
+    // Restore original data
+    Object.assign(APP, originalData);
+
+    return `
+        <div class="container">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h1 style="font-size: 2rem; font-weight: 800; color: #312e81;">
+                            ${match.homeTeam} vs ${match.awayTeam}
+                        </h1>
+                        <p style="color: #6b7280; margin-top: 0.5rem;">
+                            Dato: ${new Date(match.matchDate).toLocaleDateString('no-NO')}
+                        </p>
+                    </div>
+                    <button class="btn btn-blue" data-action="viewHistory">
+                        ← Tilbake til oversikt
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex flex-gap">
+                        <button class="btn ${APP.mode === 'attack' ? 'btn-blue' : 'btn-secondary'}"
+                                data-action="setViewMode" data-mode="attack" style="flex: 1;">
+                            ${match.homeTeam} angrep
+                        </button>
+                        <button class="btn ${APP.mode === 'defense' ? 'btn-orange' : 'btn-secondary'}"
+                                data-action="setViewMode" data-mode="defense" style="flex: 1;">
+                            Keeper mot ${match.awayTeam}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            ${statsContent}
+        </div>
+    `;
+}
+
 
 // ============================================
 // EVENT LISTENERS - THE CRITICAL PART!
@@ -1240,7 +1569,27 @@ function attachEventListeners() {
             saveToLocalStorage();
         });
     }
-    
+
+    // Match date input
+    const matchDateInput = document.getElementById('matchDateInput');
+    if (matchDateInput) {
+        matchDateInput.addEventListener('change', (e) => {
+            APP.matchDate = e.target.value;
+            saveToLocalStorage();
+        });
+    }
+
+    // File upload inputs
+    const playersFileInput = document.getElementById('playersFileInput');
+    if (playersFileInput) {
+        playersFileInput.addEventListener('change', handlePlayersFileUpload);
+    }
+
+    const opponentsFileInput = document.getElementById('opponentsFileInput');
+    if (opponentsFileInput) {
+        opponentsFileInput.addEventListener('change', handleOpponentsFileUpload);
+    }
+
     // Keeper select
     const keeperSelect = document.getElementById('keeperSelect');
     if (keeperSelect) {
@@ -1397,6 +1746,29 @@ function attachEventListeners() {
                 break;
             case 'exportData':
                 exportData();
+                break;
+            case 'loadPlayersFile':
+                loadPlayersFromFile();
+                break;
+            case 'loadOpponentsFile':
+                loadOpponentsFromFile();
+                break;
+            case 'finishMatch':
+                finishMatch();
+                break;
+            case 'viewHistory':
+                APP.page = 'history';
+                render();
+                break;
+            case 'viewMatch':
+                viewCompletedMatch(parseInt(button.dataset.matchId));
+                break;
+            case 'deleteMatch':
+                deleteCompletedMatch(parseInt(button.dataset.matchId));
+                break;
+            case 'setViewMode':
+                APP.mode = button.dataset.mode;
+                render();
                 break;
         }
     });
