@@ -121,6 +121,8 @@ function updateOpponentNumber(id, number) {
 // SHOT REGISTRATION
 // ============================================
 function handleGoalClick(e, zone) {
+    e.stopPropagation();
+    
     if (zone === 'outside') {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
@@ -144,8 +146,15 @@ function handleGoalClick(e, zone) {
     }
     
     state.selectedResult = null;
-    showModal('shotPopup');
-    render();
+    render(); // Re-render to show the popup
+    
+    // Show modal after render
+    setTimeout(() => {
+        const modal = document.getElementById('shotPopup');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }, 0);
 }
 
 function registerShot(player, result) {
@@ -190,8 +199,12 @@ function registerTechnicalError(player) {
 // MODAL MANAGEMENT
 // ============================================
 function showModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.classList.remove('hidden');
+    setTimeout(() => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }, 0);
 }
 
 function closeModal(modalId) {
