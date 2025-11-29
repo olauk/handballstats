@@ -19,18 +19,40 @@ const APP = {
 };
 
 // ============================================
+// PERFORMANCE OPTIMIZATIONS
+// ============================================
+const PERFORMANCE = {
+    statsCache: new Map(),
+    cacheVersion: 0,
+    saveTimeout: null,
+
+    invalidateStatsCache() {
+        this.cacheVersion++;
+        this.statsCache.clear();
+    },
+
+    getCachedStats(key, calculator) {
+        const cacheKey = `${key}-v${this.cacheVersion}`;
+        if (!this.statsCache.has(cacheKey)) {
+            this.statsCache.set(cacheKey, calculator());
+        }
+        return this.statsCache.get(cacheKey);
+    }
+};
+
+// ============================================
 // LOGIN & AUTH
 // ============================================
 function handleLogin(e) {
     e.preventDefault();
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
-    
+
     // Dummy authentication
     if (username === 'Ola' && password === 'handball') {
         APP.currentUser = username;
         APP.page = 'setup';
-        saveToLocalStorage();
+        saveToLocalStorageImmediate(); // Bruk umiddelbar lagring for kritiske operasjoner
         render();
     } else {
         alert('Feil brukernavn eller passord. Prøv: Ola / handball');
@@ -49,6 +71,20 @@ function handleLogout() {
 // LOCAL STORAGE
 // ============================================
 function saveToLocalStorage() {
+    // Debounce: Vent 300ms før lagring for å unngå for mange skriveoperasjoner
+    clearTimeout(PERFORMANCE.saveTimeout);
+    PERFORMANCE.saveTimeout = setTimeout(() => {
+        try {
+            localStorage.setItem('handballApp', JSON.stringify(APP));
+        } catch (e) {
+            console.error('Kunne ikke lagre til localStorage:', e);
+        }
+    }, 300);
+}
+
+function saveToLocalStorageImmediate() {
+    // For kritiske operasjoner som krever umiddelbar lagring
+    clearTimeout(PERFORMANCE.saveTimeout);
     try {
         localStorage.setItem('handballApp', JSON.stringify(APP));
     } catch (e) {
@@ -73,30 +109,36 @@ function loadFromLocalStorage() {
 // STATISTICS FUNCTIONS
 // ============================================
 function getPlayerStats(playerId, half = null) {
-    const playerEvents = APP.events.filter(e => 
-        e.player?.id === playerId && 
-        (half === null || e.half === half) &&
-        e.mode === 'attack'
-    );
-    return {
-        goals: playerEvents.filter(e => e.result === 'mål').length,
-        saved: playerEvents.filter(e => e.result === 'redning').length,
-        outside: playerEvents.filter(e => e.result === 'utenfor').length,
-        technical: APP.events.filter(e => e.player?.id === playerId && e.mode === 'technical' && (half === null || e.half === half)).length
-    };
+    // Bruk cache for å unngå å re-kalkulere statistikk ved hver render
+    return PERFORMANCE.getCachedStats(`player-${playerId}-${half}`, () => {
+        const playerEvents = APP.events.filter(e =>
+            e.player?.id === playerId &&
+            (half === null || e.half === half) &&
+            e.mode === 'attack'
+        );
+        return {
+            goals: playerEvents.filter(e => e.result === 'mål').length,
+            saved: playerEvents.filter(e => e.result === 'redning').length,
+            outside: playerEvents.filter(e => e.result === 'utenfor').length,
+            technical: APP.events.filter(e => e.player?.id === playerId && e.mode === 'technical' && (half === null || e.half === half)).length
+        };
+    });
 }
 
 function getOpponentStats(opponentId, half = null) {
-    const opponentEvents = APP.events.filter(e => 
-        e.opponent?.id === opponentId && 
-        (half === null || e.half === half) &&
-        e.mode === 'defense'
-    );
-    return {
-        goals: opponentEvents.filter(e => e.result === 'mål').length,
-        saved: opponentEvents.filter(e => e.result === 'redning').length,
-        shots: opponentEvents
-    };
+    // Bruk cache for å unngå å re-kalkulere statistikk ved hver render
+    return PERFORMANCE.getCachedStats(`opponent-${opponentId}-${half}`, () => {
+        const opponentEvents = APP.events.filter(e =>
+            e.opponent?.id === opponentId &&
+            (half === null || e.half === half) &&
+            e.mode === 'defense'
+        );
+        return {
+            goals: opponentEvents.filter(e => e.result === 'mål').length,
+            saved: opponentEvents.filter(e => e.result === 'redning').length,
+            shots: opponentEvents
+        };
+    });
 }
 
 // ============================================
@@ -265,13 +307,13 @@ function renderShotPopupContent() {
 
 function registerShot(playerId) {
     if (!APP.tempShot) return;
-    
-    const player = APP.mode === 'attack' 
+
+    const player = APP.mode === 'attack'
         ? APP.players.find(p => p.id === playerId)
         : APP.opponents.find(p => p.id === playerId);
-    
+
     if (!player) return;
-    
+
     const event = {
         id: Date.now(),
         half: APP.currentHalf,
@@ -285,16 +327,20 @@ function registerShot(playerId) {
         zone: APP.tempShot.zone,
         timestamp: new Date().toLocaleTimeString('no-NO')
     };
-    
+
     APP.events.push(event);
     APP.tempShot = null;
     APP.selectedResult = null;
-    
+
+    // Invalider statistikk-cache siden vi har lagt til et nytt event
+    PERFORMANCE.invalidateStatsCache();
+
     closeModal('shotPopup');
     saveToLocalStorage();
-    
-    // Optimized: Only update goal visualization, not entire page
+
+    // Optimalisert: Oppdater kun målvisualisering og statistikk, ikke hele siden
     updateGoalVisualization();
+    updateStatisticsOnly();
 }
 
 // Optimized function to only update goal area without re-rendering everything
@@ -304,23 +350,23 @@ function updateGoalVisualization() {
         // If we're not on match page, do nothing
         return;
     }
-    
+
     const goalArea = document.getElementById('goalArea');
     if (!goalArea) return;
-    
+
     // Get all current shot markers
-    const shots = APP.events.filter(e => 
+    const shots = APP.events.filter(e =>
         e.mode === APP.mode && (e.player || e.opponent) && e.zone === 'goal'
     );
-    
-    const outsideShots = APP.events.filter(e => 
+
+    const outsideShots = APP.events.filter(e =>
         e.mode === APP.mode && (e.player || e.opponent) && e.zone === 'outside'
     );
-    
+
     // Remove old markers
     goalArea.querySelectorAll('.shot-marker').forEach(el => el.remove());
     goalContainer.querySelectorAll('.shot-marker.outside').forEach(el => el.remove());
-    
+
     // Add new goal markers
     shots.forEach(event => {
         const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
@@ -332,7 +378,7 @@ function updateGoalVisualization() {
         marker.title = `${event.result} - ${event.timestamp}`;
         goalArea.appendChild(marker);
     });
-    
+
     // Add outside markers
     outsideShots.forEach((event, index) => {
         const leftPosition = 10 + (index % 10) * 9;
@@ -347,10 +393,44 @@ function updateGoalVisualization() {
     });
 }
 
+// Optimalisert funksjon for å kun oppdatere statistikk-seksjonen
+function updateStatisticsOnly() {
+    // Finn statistikk-kortet (siste .card element som inneholder statistikk)
+    const allCards = document.querySelectorAll('.card');
+    let statsCard = null;
+
+    // Finn kortet med "Statistikk" overskrift
+    allCards.forEach(card => {
+        const heading = card.querySelector('h2');
+        if (heading && heading.textContent.includes('Statistikk')) {
+            statsCard = card;
+        }
+    });
+
+    if (!statsCard) return;
+
+    // Opprett nytt statistikk-innhold
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = renderStatistics();
+    const newStatsCard = tempDiv.firstElementChild;
+
+    // Erstatt gammelt kort med nytt
+    statsCard.parentNode.replaceChild(newStatsCard, statsCard);
+
+    // Re-attach event listeners for knappene i statistikk-tabellen
+    attachStatisticsEventListeners();
+}
+
+// Funksjon for å kun re-attachе event listeners for statistikk-seksjonen
+function attachStatisticsEventListeners() {
+    // Event delegation håndterer allerede klikk, så denne er minimal
+    // Men vi kan legge til spesifikke listeners her om nødvendig
+}
+
 function registerTechnicalError(playerId) {
     const player = APP.players.find(p => p.id === playerId);
     if (!player) return;
-    
+
     const event = {
         id: Date.now(),
         half: APP.currentHalf,
@@ -359,11 +439,17 @@ function registerTechnicalError(playerId) {
         result: 'teknisk feil',
         timestamp: new Date().toLocaleTimeString('no-NO')
     };
-    
+
     APP.events.push(event);
+
+    // Invalider statistikk-cache siden vi har lagt til et nytt event
+    PERFORMANCE.invalidateStatsCache();
+
     closeModal('technicalPopup');
     saveToLocalStorage();
-    render();
+
+    // Optimalisert: Oppdater kun statistikk, ikke hele siden
+    updateStatisticsOnly();
 }
 
 // ============================================
@@ -386,12 +472,12 @@ function closeModal(modalId) {
 }
 
 function showPlayerShotDetails(playerId, isOpponent = false) {
-    const player = isOpponent 
+    const player = isOpponent
         ? APP.opponents.find(o => o.id === playerId)
         : APP.players.find(p => p.id === playerId);
-    
+
     if (!player) return;
-    
+
     const playerShots = APP.events.filter(e => {
         if (isOpponent) {
             return e.opponent?.id === playerId && e.zone === 'goal';
@@ -399,33 +485,127 @@ function showPlayerShotDetails(playerId, isOpponent = false) {
             return e.player?.id === playerId && e.zone === 'goal';
         }
     });
-    
+
     APP.shotDetailsData = {
         player,
         shots: playerShots,
         isOpponent
     };
-    
-    render();
+
+    // Optimalisert: Oppdater kun modal-innholdet, ikke hele siden
+    updateShotDetailsModal();
     showModal('shotDetailsPopup');
 }
 
 function showKeeperShotDetails(keeperId) {
     const keeper = APP.players.find(p => p.id === keeperId);
     if (!keeper) return;
-    
-    const keeperShots = APP.events.filter(e => 
+
+    const keeperShots = APP.events.filter(e =>
         e.keeper?.id === keeperId && e.zone === 'goal'
     );
-    
+
     APP.shotDetailsData = {
         player: keeper,
         shots: keeperShots,
         isKeeper: true
     };
-    
-    render();
+
+    // Optimalisert: Oppdater kun modal-innholdet, ikke hele siden
+    updateShotDetailsModal();
     showModal('shotDetailsPopup');
+}
+
+// Ny funksjon for å oppdatere shotDetails modal uten full re-render
+function updateShotDetailsModal() {
+    const modal = document.getElementById('shotDetailsPopup');
+    if (!modal) {
+        // Modal eksisterer ikke ennå, la render() ta seg av det
+        return;
+    }
+
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent && APP.shotDetailsData) {
+        modalContent.innerHTML = renderShotDetailsPopupContent();
+    }
+}
+
+// Separer innholdet i shotDetails modal
+function renderShotDetailsPopupContent() {
+    if (!APP.shotDetailsData) return '';
+
+    const { player, shots, isOpponent, isKeeper } = APP.shotDetailsData;
+    const goals = shots.filter(s => s.result === 'mål').length;
+    const saves = shots.filter(s => s.result === 'redning').length;
+    const shootingPercent = shots.length > 0 ? ((goals / shots.length) * 100).toFixed(1) : 0;
+
+    const shotMarkers = shots.map(shot => {
+        const playerNumber = isKeeper ? shot.opponent?.number : isOpponent ? shot.opponent?.number : shot.player?.number;
+        const className = shot.result === 'mål' ? 'goal' : 'save';
+        return `
+            <div class="shot-marker ${className}"
+                 style="left: ${shot.x}%; top: ${shot.y}%;"
+                 title="${shot.result} - ${shot.timestamp}">
+                ${playerNumber}
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="modal-header" style="position: sticky; top: 0; background: white; z-index: 10;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81;">
+                ${isKeeper
+                    ? `Keeper ${player.name} (#${player.number}) - Mottatte skudd`
+                    : `${player.name} (#${player.number}) - Skudd`}
+            </h2>
+            <button class="btn btn-secondary" data-action="closeShotDetails">
+                Lukk
+            </button>
+        </div>
+
+        ${shots.length === 0 ? `
+            <p style="text-align: center; color: #4b5563; padding: 2rem;">Ingen skudd registrert</p>
+        ` : `
+            <div class="stats-grid mb-6">
+                <div class="stat-card green">
+                    <div class="stat-value green">${goals}</div>
+                    <div class="stat-label">Mål</div>
+                </div>
+                <div class="stat-card amber">
+                    <div class="stat-value amber">${saves}</div>
+                    <div class="stat-label">Redninger</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-value blue">${shots.length}</div>
+                    <div class="stat-label">Totalt skudd</div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-value purple">${shootingPercent}%</div>
+                    <div class="stat-label">${isKeeper ? 'Innsluppsprosent' : 'Uttelling'}</div>
+                </div>
+            </div>
+
+            <div class="goal-container" style="padding-top: 3rem; padding-left: 3rem; padding-right: 3rem; cursor: default;">
+                <div class="goal" style="cursor: default;">
+                    <div class="goal-grid">
+                        ${[...Array(6)].map(() => '<div class="goal-grid-cell"></div>').join('')}
+                    </div>
+                    ${shotMarkers}
+                </div>
+            </div>
+
+            <div class="legend mt-4">
+                <div class="legend-item">
+                    <div class="legend-color green"></div>
+                    <span style="font-weight: 500;">Mål</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color amber"></div>
+                    <span style="font-weight: 500;">Redning</span>
+                </div>
+            </div>
+        `}
+    `;
 }
 
 // ============================================
@@ -452,7 +632,11 @@ function resetMatch() {
     if (confirm('Er du sikker på at du vil nullstille kampen?')) {
         APP.events = [];
         APP.currentHalf = 1;
-        saveToLocalStorage();
+
+        // Invalider cache siden alle events er slettet
+        PERFORMANCE.invalidateStatsCache();
+
+        saveToLocalStorageImmediate(); // Bruk umiddelbar lagring for kritiske operasjoner
         render();
     }
 }
@@ -1012,81 +1196,10 @@ function renderShotPopup() {
 }
 
 function renderShotDetailsPopup() {
-    if (!APP.shotDetailsData) return '';
-    
-    const { player, shots, isOpponent, isKeeper } = APP.shotDetailsData;
-    const goals = shots.filter(s => s.result === 'mål').length;
-    const saves = shots.filter(s => s.result === 'redning').length;
-    const shootingPercent = shots.length > 0 ? ((goals / shots.length) * 100).toFixed(1) : 0;
-
-    const shotMarkers = shots.map(shot => {
-        const playerNumber = isKeeper ? shot.opponent?.number : isOpponent ? shot.opponent?.number : shot.player?.number;
-        const className = shot.result === 'mål' ? 'goal' : 'save';
-        return `
-            <div class="shot-marker ${className}" 
-                 style="left: ${shot.x}%; top: ${shot.y}%;"
-                 title="${shot.result} - ${shot.timestamp}">
-                ${playerNumber}
-            </div>
-        `;
-    }).join('');
-
     return `
         <div id="shotDetailsPopup" class="modal hidden">
             <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
-                <div class="modal-header" style="position: sticky; top: 0; background: white; z-index: 10;">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81;">
-                        ${isKeeper 
-                            ? `Keeper ${player.name} (#${player.number}) - Mottatte skudd`
-                            : `${player.name} (#${player.number}) - Skudd`}
-                    </h2>
-                    <button class="btn btn-secondary" data-action="closeShotDetails">
-                        Lukk
-                    </button>
-                </div>
-
-                ${shots.length === 0 ? `
-                    <p style="text-align: center; color: #4b5563; padding: 2rem;">Ingen skudd registrert</p>
-                ` : `
-                    <div class="stats-grid mb-6">
-                        <div class="stat-card green">
-                            <div class="stat-value green">${goals}</div>
-                            <div class="stat-label">Mål</div>
-                        </div>
-                        <div class="stat-card amber">
-                            <div class="stat-value amber">${saves}</div>
-                            <div class="stat-label">Redninger</div>
-                        </div>
-                        <div class="stat-card blue">
-                            <div class="stat-value blue">${shots.length}</div>
-                            <div class="stat-label">Totalt skudd</div>
-                        </div>
-                        <div class="stat-card purple">
-                            <div class="stat-value purple">${shootingPercent}%</div>
-                            <div class="stat-label">${isKeeper ? 'Innsluppsprosent' : 'Uttelling'}</div>
-                        </div>
-                    </div>
-
-                    <div class="goal-container" style="padding-top: 3rem; padding-left: 3rem; padding-right: 3rem; cursor: default;">
-                        <div class="goal" style="cursor: default;">
-                            <div class="goal-grid">
-                                ${[...Array(6)].map(() => '<div class="goal-grid-cell"></div>').join('')}
-                            </div>
-                            ${shotMarkers}
-                        </div>
-                    </div>
-
-                    <div class="legend mt-4">
-                        <div class="legend-item">
-                            <div class="legend-color green"></div>
-                            <span style="font-weight: 500;">Mål</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color amber"></div>
-                            <span style="font-weight: 500;">Redning</span>
-                        </div>
-                    </div>
-                `}
+                ${renderShotDetailsPopupContent()}
             </div>
         </div>
     `;
@@ -1262,7 +1375,8 @@ function attachEventListeners() {
                 closeModal('shotPopup');
                 APP.tempShot = null;
                 APP.selectedResult = null;
-                render();
+                // Optimalisert: Oppdater kun målvisualisering for å fjerne temp marker
+                updateGoalVisualization();
                 break;
             case 'showPlayerDetails':
                 showPlayerShotDetails(parseInt(button.dataset.playerId), false);
@@ -1276,7 +1390,7 @@ function attachEventListeners() {
             case 'closeShotDetails':
                 closeModal('shotDetailsPopup');
                 APP.shotDetailsData = null;
-                render();
+                // Optimalisert: Ikke re-render hele siden ved lukking av modal
                 break;
             case 'resetMatch':
                 resetMatch();
