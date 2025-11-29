@@ -753,11 +753,11 @@ function renderShotPopup() {
                     <div class="mb-6">
                         <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">Velg resultat:</h3>
                         <div class="grid-2">
-                            <button class="btn btn-success" onclick="state.selectedResult = 'mål'; render();"
+                            <button class="btn btn-success" onclick="state.selectedResult = 'mål'; render(); setTimeout(() => showModal('shotPopup'), 0);"
                                     style="padding: 1rem; font-size: 1.125rem;">
                                 ⚽ Mål
                             </button>
-                            <button class="btn btn-warning" onclick="state.selectedResult = 'redning'; render();"
+                            <button class="btn btn-warning" onclick="state.selectedResult = 'redning'; render(); setTimeout(() => showModal('shotPopup'), 0);"
                                     style="padding: 1rem; font-size: 1.125rem;">
                                 🧤 Redning
                             </button>
