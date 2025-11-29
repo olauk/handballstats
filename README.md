@@ -1,14 +1,19 @@
-# Handball Analytics v2.2
+# Handball Analytics v2.3
 
 ## 🎯 Komplett håndballstatistikk-app med innlogging
 
-### Nye funksjoner i v2.2 🚀🚀
+### Nye funksjoner i v2.3 🚀🚀🚀
+- 📅 **Kampdato-registrering** - Registrer dato for hver kamp
+- 📁 **Last spillere fra fil** - Importer spillerlister fra JSON/CSV/TXT
+- ✅ **Avslutt kamp-funksjon** - Lagre fullførte kamper
+- 📋 **Kamphistorikk** - Se alle tidligere registrerte kamper
+- 👁️ **Vis tidligere kamper** - Detaljert visning av lagrede kamper
+- 🗑️ **Slett kamper** - Fjern uønskede kamper fra historikken
 - ⚡⚡ **KRAFTIG YTELSESOPTIMALISERING** - Opptil 80% raskere ved mange registreringer!
 - ✅ Innloggingsside (Brukernavn: "Ola", Passord: "handball")
 - ✅ LocalStorage - data lagres automatisk i nettleseren
 - ✅ Fullstendig fungerende skuddregistrering
 - ✅ Keeper-statistikk
-- ✅ Sesongstatistikk (grunnlag lagt for fase 2)
 
 ### Ytelsesoptimaliseringer (v2.2)
 - 🔥 **Statistikk-caching** - Beregninger kjøres kun én gang og caches i minnet
@@ -45,18 +50,54 @@
 - Passord: `handball`
 
 #### 2. Sett opp kamp
-- Legg til spillere for begge lag
-- Merk keepere med checkbox
-- Klikk "Start kamp"
+- **Laglister:** Legg til lagene manuelt eller last inn fra fil
+- **Kampdato:** Velg dato for kampen
+- **Spillere:** Legg til spillere manuelt eller last fra fil (JSON/CSV/TXT)
+  - Manuelt: Klikk "+ Legg til spiller"
+  - Fra fil: Klikk "📁 Last fra fil"
+- **Keepere:** Merk keepere med checkbox
+- **Start:** Klikk "▶ Start kamp"
 
 #### 3. Registrer skudd
 - **Angrep-modus:** Klikk på målet → Velg mål/redning → Velg spiller
 - **Forsvar-modus:** Velg aktiv keeper → Klikk på målet → Velg mål/redning → Velg motspiller
 - **Utenfor:** Klikk i grått område → Velg spiller
+- **Teknisk feil:** Klikk "Registrer teknisk feil" → Velg spiller
 
 #### 4. Se statistikk
 - Bytt mellom "Angrep" og "Forsvar" faner
 - Klikk "Se skudd" for detaljert visning per spiller
+
+#### 5. Avslutt kamp
+- Klikk "✅ Avslutt kamp" når kampen er ferdig
+- Kampen lagres automatisk i historikken
+- Du kan også eksportere data (💾 Eksporter) før du avslutter
+
+#### 6. Se tidligere kamper
+- Klikk "📋 Tidligere kamper" fra oppsettsiden
+- Se liste over alle lagrede kamper
+- Klikk "👁️ Vis" for å se detaljer
+- Klikk "🗑️ Slett" for å fjerne en kamp
+
+### Filformat for spillerimport
+
+#### JSON-format:
+```json
+[
+  {"id": 1, "name": "Ola Nordmann", "number": 7, "isKeeper": false},
+  {"id": 2, "name": "Kari Keeper", "number": 1, "isKeeper": true}
+]
+```
+
+#### CSV/TXT-format:
+```
+7,Ola Nordmann,false
+1,Kari Keeper,true
+12,Per Hansen,false
+```
+
+**Format:** `nummer,navn,isKeeper` (én spiller per linje)
+**Tips:** isKeeper kan være `true/false` eller `1/0`
 
 ### Datalagring
 

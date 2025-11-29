@@ -3,19 +3,26 @@
 // ============================================
 const APP = {
     currentUser: null,
-    page: 'login', // 'login', 'setup', 'match'
+    page: 'login', // 'login', 'setup', 'match', 'history'
     homeTeam: 'Hjemmelag',
     awayTeam: 'Bortelag',
+    matchDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
     currentHalf: 1,
-    players: [{ id: 1, name: 'Spiller 1', number: 1, isKeeper: false }],
-    opponents: [{ id: 1, name: 'Motstander 1', number: 1 }],
+    players: [],
+    opponents: [],
     activeKeeper: null,
     mode: 'attack',
     events: [],
     tempShot: null,
     selectedResult: null,
     showShotDetails: false,
-    shotDetailsData: null
+    shotDetailsData: null,
+    completedMatches: [], // Array of completed matches
+    viewingMatch: null, // For viewing a specific completed match
+    // Player management popup state
+    managingTeam: null, // 'players' or 'opponents'
+    tempPlayersList: [], // Temporary list while editing
+    editingPlayerId: null // ID of player being edited
 };
 
 // ============================================
@@ -51,7 +58,7 @@ function handleLogin(e) {
     // Dummy authentication
     if (username === 'Ola' && password === 'handball') {
         APP.currentUser = username;
-        APP.page = 'setup';
+        APP.page = 'welcome';
         saveToLocalStorageImmediate(); // Bruk umiddelbar lagring for kritiske operasjoner
         render();
     } else {
@@ -65,6 +72,28 @@ function handleLogout() {
         APP.page = 'login';
         render();
     }
+}
+
+function startNewMatch() {
+    // Nullstill spillerdata, men behold kamphistorikk
+    APP.players = [];
+    APP.opponents = [];
+    APP.homeTeam = 'Hjemmelag';
+    APP.awayTeam = 'Bortelag';
+    APP.matchDate = new Date().toISOString().split('T')[0];
+    APP.events = [];
+    APP.currentHalf = 1;
+    APP.activeKeeper = null;
+    APP.mode = 'attack';
+    APP.tempShot = null;
+    APP.selectedResult = null;
+
+    // Invalider cache
+    PERFORMANCE.invalidateStatsCache();
+
+    APP.page = 'setup';
+    saveToLocalStorageImmediate();
+    render();
 }
 
 // ============================================
@@ -144,43 +173,238 @@ function getOpponentStats(opponentId, half = null) {
 // ============================================
 // PLAYER MANAGEMENT
 // ============================================
-function addPlayer() {
-    const newId = Math.max(0, ...APP.players.map(p => p.id)) + 1;
-    APP.players.push({
-        id: newId,
-        name: `Spiller ${newId}`,
-        number: newId,
-        isKeeper: false
-    });
+function openPlayersManagement() {
+    APP.managingTeam = 'players';
+    APP.tempPlayersList = JSON.parse(JSON.stringify(APP.players));
+    APP.editingPlayerId = null;
+    showModal('playersManagementPopup');
+    updatePlayersManagementModal();
+}
+
+function openOpponentsManagement() {
+    APP.managingTeam = 'opponents';
+    APP.tempPlayersList = JSON.parse(JSON.stringify(APP.opponents));
+    APP.editingPlayerId = null;
+    showModal('playersManagementPopup');
+    updatePlayersManagementModal();
+}
+
+function addPlayerToTempList() {
+    const numberInput = document.getElementById('playerNumberInput');
+    const nameInput = document.getElementById('playerNameInput');
+    const isKeeperInput = document.getElementById('playerIsKeeperInput');
+
+    const numberValue = numberInput?.value?.trim();
+    const nameValue = nameInput?.value?.trim();
+    const number = parseInt(numberValue);
+    const name = nameValue;
+    const isKeeper = isKeeperInput?.checked || false;
+
+    // Validering
+    if (!numberValue || !nameValue) {
+        alert('Vennligst fyll ut både nummer og navn');
+        return;
+    }
+
+    if (isNaN(number) || number <= 0) {
+        alert('Spillernummer må være et positivt tall');
+        return;
+    }
+
+    if (APP.editingPlayerId) {
+        // Rediger eksisterende spiller
+        const player = APP.tempPlayersList.find(p => p.id === APP.editingPlayerId);
+        if (player) {
+            player.number = number;
+            player.name = name;
+            if (APP.managingTeam === 'players') {
+                player.isKeeper = isKeeper;
+            }
+        }
+        APP.editingPlayerId = null;
+    } else {
+        // Legg til ny spiller
+        const newId = Date.now() + Math.floor(Math.random() * 1000);
+        const newPlayer = {
+            id: newId,
+            number: number,
+            name: name
+        };
+
+        if (APP.managingTeam === 'players') {
+            newPlayer.isKeeper = isKeeper;
+        }
+
+        APP.tempPlayersList.push(newPlayer);
+    }
+
+    // Tøm feltene
+    if (numberInput) numberInput.value = '';
+    if (nameInput) nameInput.value = '';
+    if (isKeeperInput) isKeeperInput.checked = false;
+
+    updatePlayersManagementModal();
+}
+
+function editPlayerInTempList(playerId) {
+    const player = APP.tempPlayersList.find(p => p.id === playerId);
+    if (!player) return;
+
+    APP.editingPlayerId = playerId;
+
+    // Fyll feltene med spillerdata
+    const numberInput = document.getElementById('playerNumberInput');
+    const nameInput = document.getElementById('playerNameInput');
+    const isKeeperInput = document.getElementById('playerIsKeeperInput');
+
+    if (numberInput) numberInput.value = player.number;
+    if (nameInput) nameInput.value = player.name;
+    if (isKeeperInput && APP.managingTeam === 'players') {
+        isKeeperInput.checked = player.isKeeper || false;
+    }
+}
+
+function removePlayerFromTempList(playerId) {
+    APP.tempPlayersList = APP.tempPlayersList.filter(p => p.id !== playerId);
+    if (APP.editingPlayerId === playerId) {
+        APP.editingPlayerId = null;
+        // Tøm feltene
+        const numberInput = document.getElementById('playerNumberInput');
+        const nameInput = document.getElementById('playerNameInput');
+        const isKeeperInput = document.getElementById('playerIsKeeperInput');
+        if (numberInput) numberInput.value = '';
+        if (nameInput) nameInput.value = '';
+        if (isKeeperInput) isKeeperInput.checked = false;
+    }
+    updatePlayersManagementModal();
+}
+
+function savePlayersList() {
+    if (APP.managingTeam === 'players') {
+        APP.players = JSON.parse(JSON.stringify(APP.tempPlayersList));
+    } else {
+        APP.opponents = JSON.parse(JSON.stringify(APP.tempPlayersList));
+    }
+
+    APP.tempPlayersList = [];
+    APP.managingTeam = null;
+    APP.editingPlayerId = null;
+
+    closeModal('playersManagementPopup');
     saveToLocalStorage();
     render();
 }
 
-function removePlayer(id) {
-    if (APP.players.length > 1) {
-        APP.players = APP.players.filter(p => p.id !== id);
-        saveToLocalStorage();
-        render();
+function cancelPlayersManagement() {
+    APP.tempPlayersList = [];
+    APP.managingTeam = null;
+    APP.editingPlayerId = null;
+    closeModal('playersManagementPopup');
+}
+
+function updatePlayersManagementModal() {
+    const modal = document.getElementById('playersManagementPopup');
+    if (!modal) return;
+
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.innerHTML = renderPlayersManagementPopupContent();
     }
 }
 
-function addOpponent() {
-    const newId = Math.max(0, ...APP.opponents.map(o => o.id)) + 1;
-    APP.opponents.push({
-        id: newId,
-        name: `Motstander ${newId}`,
-        number: newId
-    });
-    saveToLocalStorage();
-    render();
-}
+function renderPlayersManagementPopupContent() {
+    const isPlayers = APP.managingTeam === 'players';
+    const teamName = isPlayers ? APP.homeTeam : APP.awayTeam;
+    const teamColor = isPlayers ? '#3b82f6' : '#f97316';
+    const bgColor = isPlayers ? '#eff6ff' : '#ffedd5';
 
-function removeOpponent(id) {
-    if (APP.opponents.length > 1) {
-        APP.opponents = APP.opponents.filter(o => o.id !== id);
-        saveToLocalStorage();
-        render();
-    }
+    return `
+        <div class="modal-header">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: ${teamColor};">
+                ${isPlayers ? '⚽' : '🏐'} Håndter ${teamName} spillere
+            </h2>
+            <button class="btn btn-secondary" data-action="cancelPlayers">
+                Lukk
+            </button>
+        </div>
+
+        <div style="margin-bottom: 1.5rem; padding: 1rem; background: ${bgColor}; border-radius: 0.5rem;">
+            <h3 style="font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">
+                ${APP.editingPlayerId ? 'Rediger spiller' : 'Legg til ny spiller'}
+            </h3>
+            <div class="grid-2 mb-4" style="gap: 0.5rem;">
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">
+                        Nummer *
+                    </label>
+                    <input type="number" id="playerNumberInput"
+                           placeholder="Spillernummer"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">
+                        Navn *
+                    </label>
+                    <input type="text" id="playerNameInput"
+                           placeholder="Spillernavn"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;">
+                </div>
+            </div>
+            ${isPlayers ? `
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="playerIsKeeperInput">
+                        <span style="font-weight: 600;">Keeper</span>
+                    </label>
+                </div>
+            ` : ''}
+            <button class="btn btn-success" data-action="addPlayerToList" style="width: 100%;">
+                ${APP.editingPlayerId ? '✅ Oppdater spiller' : '+ Legg til spiller'}
+            </button>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">
+                Spillerliste (${APP.tempPlayersList.length} spillere)
+            </h3>
+            ${APP.tempPlayersList.length === 0 ? `
+                <p style="color: #6b7280; text-align: center; padding: 2rem;">
+                    Ingen spillere lagt til ennå
+                </p>
+            ` : `
+                <div style="max-height: 300px; overflow-y: auto;">
+                    ${APP.tempPlayersList.map(player => `
+                        <div class="player-item ${isPlayers ? '' : 'opponent-item'}" style="margin-bottom: 0.5rem;">
+                            <span style="font-weight: 700; font-size: 1.25rem; min-width: 3rem; text-align: center; color: ${teamColor};">
+                                #${player.number}
+                            </span>
+                            <span style="flex: 1; font-weight: 600;">
+                                ${player.name}
+                                ${player.isKeeper ? ' 🧤' : ''}
+                            </span>
+                            <button class="btn btn-blue" data-action="editPlayerInList" data-player-id="${player.id}"
+                                    style="padding: 0.5rem 0.75rem; font-size: 0.875rem;">
+                                ✏️ Rediger
+                            </button>
+                            <button class="btn btn-danger" data-action="removePlayerFromList" data-player-id="${player.id}"
+                                    style="padding: 0.5rem 0.75rem; font-size: 0.875rem;">
+                                🗑️ Fjern
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `}
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+            <button class="btn btn-secondary" data-action="cancelPlayers">
+                Avbryt
+            </button>
+            <button class="btn btn-success" data-action="savePlayers" style="font-weight: 700;">
+                💾 Lagre spillertropp
+            </button>
+        </div>
+    `;
 }
 
 // ============================================
@@ -611,6 +835,140 @@ function renderShotDetailsPopupContent() {
 // ============================================
 // DATA MANAGEMENT
 // ============================================
+function loadPlayersFromFile() {
+    const fileInput = document.getElementById('playersFileInput');
+    fileInput.click();
+}
+
+function loadOpponentsFromFile() {
+    const fileInput = document.getElementById('opponentsFileInput');
+    fileInput.click();
+}
+
+function handlePlayersFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const content = e.target.result;
+            let players = [];
+
+            if (file.name.endsWith('.json')) {
+                // JSON format: [{id, name, number, isKeeper}, ...]
+                players = JSON.parse(content);
+            } else if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+                // CSV/TXT format: number,name,isKeeper (one per line)
+                const lines = content.split('\n').filter(line => line.trim());
+                players = lines.map((line, index) => {
+                    const [number, name, isKeeper] = line.split(',').map(s => s.trim());
+                    return {
+                        id: Date.now() + index + Math.floor(Math.random() * 100),
+                        name: name || `Spiller ${index + 1}`,
+                        number: parseInt(number) || index + 1,
+                        isKeeper: isKeeper === 'true' || isKeeper === '1'
+                    };
+                });
+            }
+
+            if (players.length > 0) {
+                // Åpne popup med importerte spillere
+                APP.managingTeam = 'players';
+                APP.tempPlayersList = players;
+                APP.editingPlayerId = null;
+                showModal('playersManagementPopup');
+                updatePlayersManagementModal();
+            }
+        } catch (error) {
+            alert('Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\nFormat JSON: [{"id":1,"name":"Navn","number":1,"isKeeper":false}]\nFormat CSV/TXT: nummer,navn,isKeeper');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // Reset input
+}
+
+function handleOpponentsFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const content = e.target.result;
+            let opponents = [];
+
+            if (file.name.endsWith('.json')) {
+                opponents = JSON.parse(content);
+            } else if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+                const lines = content.split('\n').filter(line => line.trim());
+                opponents = lines.map((line, index) => {
+                    const [number, name] = line.split(',').map(s => s.trim());
+                    return {
+                        id: Date.now() + index + Math.floor(Math.random() * 100),
+                        name: name || `Motstander ${index + 1}`,
+                        number: parseInt(number) || index + 1
+                    };
+                });
+            }
+
+            if (opponents.length > 0) {
+                // Åpne popup med importerte motstandere
+                APP.managingTeam = 'opponents';
+                APP.tempPlayersList = opponents;
+                APP.editingPlayerId = null;
+                showModal('playersManagementPopup');
+                updatePlayersManagementModal();
+            }
+        } catch (error) {
+            alert('Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\nFormat JSON: [{"id":1,"name":"Navn","number":1}]\nFormat CSV/TXT: nummer,navn');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // Reset input
+}
+
+function finishMatch() {
+    // Bekreft at brukeren vil avslutte kampen
+    const confirmMessage = APP.events.length === 0
+        ? 'Ingen skudd er registrert. Vil du fortsatt avslutte kampen?'
+        : 'Er du sikker på at du vil avslutte kampen? Kampen vil bli lagret.';
+
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+
+    const matchData = {
+        id: Date.now(),
+        matchDate: APP.matchDate,
+        homeTeam: APP.homeTeam,
+        awayTeam: APP.awayTeam,
+        players: JSON.parse(JSON.stringify(APP.players)),
+        opponents: JSON.parse(JSON.stringify(APP.opponents)),
+        events: JSON.parse(JSON.stringify(APP.events)),
+        completedAt: new Date().toISOString()
+    };
+
+    APP.completedMatches.push(matchData);
+
+    // Reset match data
+    APP.events = [];
+    APP.currentHalf = 1;
+    APP.activeKeeper = null;
+    APP.tempShot = null;
+    APP.selectedResult = null;
+    APP.mode = 'attack';
+
+    // Invalider cache
+    PERFORMANCE.invalidateStatsCache();
+
+    saveToLocalStorageImmediate();
+
+    alert('Kampen er avsluttet og lagret!');
+    APP.page = 'welcome';
+    render();
+}
+
 function exportData() {
     const data = {
         players: APP.players,
@@ -618,14 +976,32 @@ function exportData() {
         events: APP.events,
         homeTeam: APP.homeTeam,
         awayTeam: APP.awayTeam,
+        matchDate: APP.matchDate,
         timestamp: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `handball-stats-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `handball-stats-${APP.homeTeam}-${APP.matchDate}.json`;
     a.click();
+}
+
+function deleteCompletedMatch(matchId) {
+    if (confirm('Er du sikker på at du vil slette denne kampen?')) {
+        APP.completedMatches = APP.completedMatches.filter(m => m.id !== matchId);
+        saveToLocalStorageImmediate();
+        render();
+    }
+}
+
+function viewCompletedMatch(matchId) {
+    const match = APP.completedMatches.find(m => m.id === matchId);
+    if (match) {
+        APP.viewingMatch = match;
+        APP.page = 'viewMatch';
+        render();
+    }
 }
 
 function resetMatch() {
@@ -647,15 +1023,21 @@ function resetMatch() {
 function render() {
     const app = document.getElementById('app');
     if (!app) return;
-    
+
     if (APP.page === 'login') {
         app.innerHTML = renderLoginPage();
+    } else if (APP.page === 'welcome') {
+        app.innerHTML = renderWelcomePage();
     } else if (APP.page === 'setup') {
         app.innerHTML = renderSetupPage();
+    } else if (APP.page === 'history') {
+        app.innerHTML = renderHistoryPage();
+    } else if (APP.page === 'viewMatch') {
+        app.innerHTML = renderViewMatchPage();
     } else {
         app.innerHTML = renderMatchPage();
     }
-    
+
     attachEventListeners();
 }
 
@@ -671,44 +1053,44 @@ function renderLoginPage() {
                         Før skuddstatistikk, redninger og tekniske feil på dine spillere
                     </p>
                 </div>
-                
+
                 <form id="loginForm" style="space-y: 1rem;">
                     <div>
                         <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
                             Brukernavn
                         </label>
-                        <input 
-                            type="text" 
-                            id="username" 
+                        <input
+                            type="text"
+                            id="username"
                             name="username"
                             placeholder="Skriv inn brukernavn"
                             required
                             style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
                         >
                     </div>
-                    
+
                     <div style="margin-top: 1rem;">
                         <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
                             Passord
                         </label>
-                        <input 
-                            type="password" 
-                            id="password" 
+                        <input
+                            type="password"
+                            id="password"
                             name="password"
                             placeholder="Skriv inn passord"
                             required
                             style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
                         >
                     </div>
-                    
-                    <button 
-                        type="submit" 
+
+                    <button
+                        type="submit"
                         class="btn btn-primary"
                         style="width: 100%; margin-top: 1.5rem; padding: 1rem; font-size: 1.125rem; font-weight: 700;">
                         Logg inn
                     </button>
                 </form>
-                
+
                 <div style="margin-top: 1.5rem; padding: 1rem; background: #eff6ff; border-radius: 0.5rem; border: 1px solid #bfdbfe;">
                     <p style="font-size: 0.875rem; color: #1e40af; text-align: center;">
                         <strong>Demo:</strong> Bruk "Ola" / "handball"
@@ -719,23 +1101,126 @@ function renderLoginPage() {
     `;
 }
 
-function renderSetupPage() {
+function renderWelcomePage() {
+    const hasCompletedMatches = APP.completedMatches && APP.completedMatches.length > 0;
+
     return `
-        <div class="container">
+        <div class="container" style="max-width: 56rem; margin-top: 2rem;">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                    <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81;">
-                        Oppsett av kamp
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81; margin-bottom: 0.5rem;">
+                        Velkommen til Handball Analytics
                     </h1>
+                    <p style="font-size: 1.125rem; color: #6b7280;">
+                        Profesjonell kampstatistikk for håndball
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f3f4f6; border-radius: 0.5rem;">
+                    <h2 style="font-size: 1.25rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
+                        Hva kan du gjøre med denne appen?
+                    </h2>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 0.75rem; display: flex; align-items: start; gap: 0.5rem;">
+                            <span style="color: #059669; font-size: 1.25rem;">⚽</span>
+                            <span><strong>Registrer skudd:</strong> Klikk på målet der skuddet gikk, velg om det ble mål eller redning, og velg hvilken spiller som skjøt</span>
+                        </li>
+                        <li style="margin-bottom: 0.75rem; display: flex; align-items: start; gap: 0.5rem;">
+                            <span style="color: #2563eb; font-size: 1.25rem;">🧤</span>
+                            <span><strong>Keeperstatistikk:</strong> Registrer motstanderskudd og følg keepernes redningsprosent i sanntid</span>
+                        </li>
+                        <li style="margin-bottom: 0.75rem; display: flex; align-items: start; gap: 0.5rem;">
+                            <span style="color: #dc2626; font-size: 1.25rem;">⚠️</span>
+                            <span><strong>Tekniske feil:</strong> Registrer tekniske feil på dine spillere</span>
+                        </li>
+                        <li style="margin-bottom: 0.75rem; display: flex; align-items: start; gap: 0.5rem;">
+                            <span style="color: #7c3aed; font-size: 1.25rem;">📊</span>
+                            <span><strong>Detaljert statistikk:</strong> Se uttelling, mål per omgang, skuddkart og fullstendig kampstatistikk</span>
+                        </li>
+                        <li style="margin-bottom: 0.75rem; display: flex; align-items: start; gap: 0.5rem;">
+                            <span style="color: #ea580c; font-size: 1.25rem;">💾</span>
+                            <span><strong>Lagre kamper:</strong> Alle kamper lagres automatisk og kan ses på senere</span>
+                        </li>
+                        <li style="display: flex; align-items: start; gap: 0.5rem;">
+                            <span style="color: #0891b2; font-size: 1.25rem;">📁</span>
+                            <span><strong>Import/eksport:</strong> Last inn spillere fra fil eller eksporter kampdata til JSON</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom: 2rem; padding: 1.5rem; background: #eff6ff; border-radius: 0.5rem; border: 2px solid #3b82f6;">
+                    <h2 style="font-size: 1.25rem; font-weight: 700; color: #1e40af; margin-bottom: 1rem;">
+                        Slik kommer du i gang:
+                    </h2>
+                    <ol style="margin: 0; padding-left: 1.5rem; color: #1e40af;">
+                        <li style="margin-bottom: 0.5rem;">Velg om du vil starte en ny kamp eller se tidligere kamper</li>
+                        <li style="margin-bottom: 0.5rem;">For ny kamp: Legg inn lagnavn, dato og spillere</li>
+                        <li style="margin-bottom: 0.5rem;">Start kampen og registrer skudd ved å klikke på målet</li>
+                        <li style="margin-bottom: 0.5rem;">Bytt mellom angrep og forsvar etter behov</li>
+                        <li>Avslutt kampen når den er ferdig - all data lagres automatisk</li>
+                    </ol>
+                </div>
+
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-success" data-action="startNewMatch"
+                            style="flex: 1; min-width: 250px; padding: 1.5rem; font-size: 1.25rem; font-weight: 700;">
+                        ⚽ Start ny kamp
+                    </button>
+                    ${hasCompletedMatches ? `
+                        <button class="btn btn-blue" data-action="viewHistory"
+                                style="flex: 1; min-width: 250px; padding: 1.5rem; font-size: 1.25rem; font-weight: 700;">
+                            📋 Se tidligere kamper (${APP.completedMatches.length})
+                        </button>
+                    ` : `
+                        <button class="btn btn-secondary" data-action="viewHistory"
+                                style="flex: 1; min-width: 250px; padding: 1.5rem; font-size: 1.25rem; font-weight: 700;">
+                            📋 Tidligere kamper
+                        </button>
+                    `}
+                </div>
+
+                <div style="margin-top: 2rem; text-align: center;">
                     <button class="btn btn-secondary" data-action="logout">
                         Logg ut
                     </button>
                 </div>
-                
+            </div>
+        </div>
+    `;
+}
+
+function renderPlayersManagementPopup() {
+    return `
+        <div id="playersManagementPopup" class="modal hidden">
+            <div class="modal-content">
+                ${renderPlayersManagementPopupContent()}
+            </div>
+        </div>
+    `;
+}
+
+function renderSetupPage() {
+    return `
+        <div class="container">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81;">
+                        Oppsett av kamp
+                    </h1>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-blue" data-action="viewHistory">
+                            📋 Tidligere kamper
+                        </button>
+                        <button class="btn btn-secondary" data-action="logout">
+                            Logg ut
+                        </button>
+                    </div>
+                </div>
+
                 <div class="grid-2 mb-6">
                     <div>
                         <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Hjemmelag</label>
-                        <input type="text" id="homeTeamInput" value="${APP.homeTeam}" 
+                        <input type="text" id="homeTeamInput" value="${APP.homeTeam}"
                                data-field="homeTeam" placeholder="Navn på hjemmelag">
                     </div>
                     <div>
@@ -746,54 +1231,67 @@ function renderSetupPage() {
                 </div>
 
                 <div class="mb-6">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Kampdato</label>
+                    <input type="date" id="matchDateInput" value="${APP.matchDate}"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;">
+                </div>
+
+                <div class="mb-6">
                     <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
                         ${APP.homeTeam} - Spillere
+                        ${APP.players.length > 0 ? `<span style="font-weight: 400; font-size: 1rem; color: #6b7280;">(${APP.players.length} spillere)</span>` : ''}
                     </h2>
-                    <div style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem;">
-                        ${APP.players.map(player => `
-                            <div class="player-item">
-                                <input type="number" value="${player.number}" 
-                                       data-player-id="${player.id}" data-field="number"
-                                       style="width: 80px;" placeholder="Nr">
-                                <input type="text" value="${player.name}"
-                                       data-player-id="${player.id}" data-field="name"
-                                       style="flex: 1;" placeholder="Spillernavn">
-                                <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: white; border-radius: 0.5rem; border: 2px solid #d1d5db; cursor: pointer;">
-                                    <input type="checkbox" ${player.isKeeper ? 'checked' : ''}
-                                           data-player-id="${player.id}" data-field="keeper">
-                                    <span style="font-weight: 600; white-space: nowrap;">Keeper</span>
-                                </label>
-                                <button class="btn btn-danger" data-action="removePlayer" data-id="${player.id}"
-                                        style="padding: 0.5rem; font-size: 1.25rem;">×</button>
+                    ${APP.players.length > 0 ? `
+                        <div style="padding: 1rem; background: #eff6ff; border-radius: 0.5rem; margin-bottom: 1rem;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                ${APP.players.map(player => `
+                                    <span style="padding: 0.5rem 1rem; background: white; border-radius: 0.5rem; border: 2px solid #3b82f6; font-weight: 600;">
+                                        #${player.number} ${player.name}${player.isKeeper ? ' 🧤' : ''}
+                                    </span>
+                                `).join('')}
                             </div>
-                        `).join('')}
+                        </div>
+                    ` : `
+                        <p style="color: #6b7280; margin-bottom: 1rem;">Ingen spillere lagt til ennå</p>
+                    `}
+                    <div class="grid-2" style="gap: 0.5rem;">
+                        <button class="btn btn-blue" data-action="managePlayers" style="width: 100%; font-size: 1.125rem;">
+                            ${APP.players.length > 0 ? '✏️ Rediger spillere' : '+ Legg til spillere'}
+                        </button>
+                        <button class="btn btn-secondary" data-action="loadPlayersFile" style="width: 100%; font-size: 1.125rem;">
+                            📁 Last fra fil
+                        </button>
                     </div>
-                    <button class="btn btn-blue" data-action="addPlayer" style="width: 100%; font-size: 1.125rem;">
-                        + Legg til spiller
-                    </button>
+                    <input type="file" id="playersFileInput" accept=".json,.txt,.csv" style="display: none;">
                 </div>
 
                 <div class="mb-6">
                     <h2 style="font-size: 1.5rem; font-weight: 700; color: #c2410c; margin-bottom: 1rem;">
                         ${APP.awayTeam} - Spillere
+                        ${APP.opponents.length > 0 ? `<span style="font-weight: 400; font-size: 1rem; color: #6b7280;">(${APP.opponents.length} spillere)</span>` : ''}
                     </h2>
-                    <div style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem;">
-                        ${APP.opponents.map(opponent => `
-                            <div class="player-item opponent-item">
-                                <input type="number" value="${opponent.number}"
-                                       data-opponent-id="${opponent.id}" data-field="number"
-                                       style="width: 80px;" placeholder="Nr">
-                                <input type="text" value="${opponent.name}"
-                                       data-opponent-id="${opponent.id}" data-field="name"
-                                       style="flex: 1;" placeholder="Spillernavn">
-                                <button class="btn btn-danger" data-action="removeOpponent" data-id="${opponent.id}"
-                                        style="padding: 0.5rem; font-size: 1.25rem;">×</button>
+                    ${APP.opponents.length > 0 ? `
+                        <div style="padding: 1rem; background: #ffedd5; border-radius: 0.5rem; margin-bottom: 1rem;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                ${APP.opponents.map(opponent => `
+                                    <span style="padding: 0.5rem 1rem; background: white; border-radius: 0.5rem; border: 2px solid #f97316; font-weight: 600;">
+                                        #${opponent.number} ${opponent.name}
+                                    </span>
+                                `).join('')}
                             </div>
-                        `).join('')}
+                        </div>
+                    ` : `
+                        <p style="color: #6b7280; margin-bottom: 1rem;">Ingen motstandere lagt til ennå</p>
+                    `}
+                    <div class="grid-2" style="gap: 0.5rem;">
+                        <button class="btn btn-orange" data-action="manageOpponents" style="width: 100%; font-size: 1.125rem;">
+                            ${APP.opponents.length > 0 ? '✏️ Rediger motstandere' : '+ Legg til motstandere'}
+                        </button>
+                        <button class="btn btn-secondary" data-action="loadOpponentsFile" style="width: 100%; font-size: 1.125rem;">
+                            📁 Last fra fil
+                        </button>
                     </div>
-                    <button class="btn btn-orange" data-action="addOpponent" style="width: 100%; font-size: 1.125rem;">
-                        + Legg til spiller
-                    </button>
+                    <input type="file" id="opponentsFileInput" accept=".json,.txt,.csv" style="display: none;">
                 </div>
 
                 <button class="btn btn-success" data-action="startMatch"
@@ -802,6 +1300,7 @@ function renderSetupPage() {
                 </button>
             </div>
         </div>
+        ${renderPlayersManagementPopup()}
     `;
 }
 
@@ -824,12 +1323,15 @@ function renderMatchPage() {
                             ${APP.homeTeam} vs ${APP.awayTeam}
                         </h1>
                     </div>
-                    <div class="flex" style="gap: 0.5rem;">
-                        <button class="btn btn-danger" data-action="resetMatch">
-                            🔄 Nullstill
+                    <div class="flex" style="gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn btn-warning" data-action="finishMatch">
+                            ✅ Avslutt kamp
                         </button>
                         <button class="btn btn-success" data-action="exportData">
                             💾 Eksporter
+                        </button>
+                        <button class="btn btn-danger" data-action="resetMatch">
+                            🔄 Nullstill
                         </button>
                         <button class="btn btn-secondary" data-action="logout">
                             Logg ut
@@ -1205,6 +1707,157 @@ function renderShotDetailsPopup() {
     `;
 }
 
+function renderHistoryPage() {
+    const sortedMatches = [...APP.completedMatches].sort((a, b) =>
+        new Date(b.matchDate) - new Date(a.matchDate)
+    );
+
+    return `
+        <div class="container">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81;">
+                        Tidligere kamper
+                    </h1>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-blue" data-action="backToSetup">
+                            ← Tilbake til oppsett
+                        </button>
+                        <button class="btn btn-secondary" data-action="logout">
+                            Logg ut
+                        </button>
+                    </div>
+                </div>
+
+                ${sortedMatches.length === 0 ? `
+                    <div style="text-align: center; padding: 4rem 2rem;">
+                        <h2 style="font-size: 1.5rem; color: #6b7280; margin-bottom: 1rem;">
+                            Ingen kamper registrert ennå
+                        </h2>
+                        <p style="color: #9ca3af; margin-bottom: 2rem;">
+                            Avsluttede kamper vil vises her
+                        </p>
+                        <button class="btn btn-primary" data-action="backToSetup">
+                            Start ny kamp
+                        </button>
+                    </div>
+                ` : `
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Dato</th>
+                                    <th>Hjemmelag</th>
+                                    <th>Bortelag</th>
+                                    <th class="text-center">Skudd</th>
+                                    <th class="text-center">Mål</th>
+                                    <th class="text-center">Handlinger</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sortedMatches.map(match => {
+                                    const totalShots = match.events.filter(e =>
+                                        e.mode === 'attack' && e.player
+                                    ).length;
+                                    const totalGoals = match.events.filter(e =>
+                                        e.mode === 'attack' && e.result === 'mål'
+                                    ).length;
+
+                                    return `
+                                        <tr>
+                                            <td>${new Date(match.matchDate).toLocaleDateString('no-NO')}</td>
+                                            <td style="font-weight: 600;">${match.homeTeam}</td>
+                                            <td style="font-weight: 600;">${match.awayTeam}</td>
+                                            <td class="text-center">${totalShots}</td>
+                                            <td class="text-center" style="font-weight: 700; color: #059669;">${totalGoals}</td>
+                                            <td class="text-center">
+                                                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                                    <button class="btn btn-primary" data-action="viewMatch" data-match-id="${match.id}"
+                                                            style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                                        👁️ Vis
+                                                    </button>
+                                                    <button class="btn btn-danger" data-action="deleteMatch" data-match-id="${match.id}"
+                                                            style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                                        🗑️ Slett
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function renderViewMatchPage() {
+    if (!APP.viewingMatch) {
+        return renderHistoryPage();
+    }
+
+    const match = APP.viewingMatch;
+
+    // Temporarily set APP data to match data for rendering
+    const originalData = {
+        homeTeam: APP.homeTeam,
+        awayTeam: APP.awayTeam,
+        players: APP.players,
+        opponents: APP.opponents,
+        events: APP.events,
+        mode: APP.mode
+    };
+
+    APP.homeTeam = match.homeTeam;
+    APP.awayTeam = match.awayTeam;
+    APP.players = match.players;
+    APP.opponents = match.opponents;
+    APP.events = match.events;
+
+    const statsContent = renderStatistics();
+
+    // Restore original data
+    Object.assign(APP, originalData);
+
+    return `
+        <div class="container">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h1 style="font-size: 2rem; font-weight: 800; color: #312e81;">
+                            ${match.homeTeam} vs ${match.awayTeam}
+                        </h1>
+                        <p style="color: #6b7280; margin-top: 0.5rem;">
+                            Dato: ${new Date(match.matchDate).toLocaleDateString('no-NO')}
+                        </p>
+                    </div>
+                    <button class="btn btn-blue" data-action="viewHistory">
+                        ← Tilbake til oversikt
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex flex-gap">
+                        <button class="btn ${APP.mode === 'attack' ? 'btn-blue' : 'btn-secondary'}"
+                                data-action="setViewMode" data-mode="attack" style="flex: 1;">
+                            ${match.homeTeam} angrep
+                        </button>
+                        <button class="btn ${APP.mode === 'defense' ? 'btn-orange' : 'btn-secondary'}"
+                                data-action="setViewMode" data-mode="defense" style="flex: 1;">
+                            Keeper mot ${match.awayTeam}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            ${statsContent}
+        </div>
+    `;
+}
+
 
 // ============================================
 // EVENT LISTENERS - THE CRITICAL PART!
@@ -1240,7 +1893,27 @@ function attachEventListeners() {
             saveToLocalStorage();
         });
     }
-    
+
+    // Match date input
+    const matchDateInput = document.getElementById('matchDateInput');
+    if (matchDateInput) {
+        matchDateInput.addEventListener('change', (e) => {
+            APP.matchDate = e.target.value;
+            saveToLocalStorage();
+        });
+    }
+
+    // File upload inputs
+    const playersFileInput = document.getElementById('playersFileInput');
+    if (playersFileInput) {
+        playersFileInput.addEventListener('change', handlePlayersFileUpload);
+    }
+
+    const opponentsFileInput = document.getElementById('opponentsFileInput');
+    if (opponentsFileInput) {
+        opponentsFileInput.addEventListener('change', handleOpponentsFileUpload);
+    }
+
     // Keeper select
     const keeperSelect = document.getElementById('keeperSelect');
     if (keeperSelect) {
@@ -1324,17 +1997,29 @@ function attachEventListeners() {
             case 'logout':
                 handleLogout();
                 break;
-            case 'addPlayer':
-                addPlayer();
+            case 'startNewMatch':
+                startNewMatch();
                 break;
-            case 'removePlayer':
-                removePlayer(parseInt(button.dataset.id));
+            case 'managePlayers':
+                openPlayersManagement();
                 break;
-            case 'addOpponent':
-                addOpponent();
+            case 'manageOpponents':
+                openOpponentsManagement();
                 break;
-            case 'removeOpponent':
-                removeOpponent(parseInt(button.dataset.id));
+            case 'addPlayerToList':
+                addPlayerToTempList();
+                break;
+            case 'editPlayerInList':
+                editPlayerInTempList(parseInt(button.dataset.playerId));
+                break;
+            case 'removePlayerFromList':
+                removePlayerFromTempList(parseInt(button.dataset.playerId));
+                break;
+            case 'savePlayers':
+                savePlayersList();
+                break;
+            case 'cancelPlayers':
+                cancelPlayersManagement();
                 break;
             case 'startMatch':
                 APP.page = 'match';
@@ -1397,6 +2082,29 @@ function attachEventListeners() {
                 break;
             case 'exportData':
                 exportData();
+                break;
+            case 'loadPlayersFile':
+                loadPlayersFromFile();
+                break;
+            case 'loadOpponentsFile':
+                loadOpponentsFromFile();
+                break;
+            case 'finishMatch':
+                finishMatch();
+                break;
+            case 'viewHistory':
+                APP.page = 'history';
+                render();
+                break;
+            case 'viewMatch':
+                viewCompletedMatch(parseInt(button.dataset.matchId));
+                break;
+            case 'deleteMatch':
+                deleteCompletedMatch(parseInt(button.dataset.matchId));
+                break;
+            case 'setViewMode':
+                APP.mode = button.dataset.mode;
+                render();
                 break;
         }
     });
