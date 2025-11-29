@@ -27,12 +27,6 @@ En komplett app for å føre statistikk over spillerprestasjoner i håndball.
 3. Velg "Legg til på Hjem-skjerm"
 4. Nå har du en app-ikon!
 
-## Gjøre endringer
-1. Last opp filene til Claude
-2. Beskriv hva du vil endre
-3. Last ned oppdaterte filer
-4. Erstatt de gamle filene på Netlify
-
 ## Funksjoner
 - ✅ Registrer skudd med nøyaktige koordinater
 - ✅ Mål/redning/utenfor
@@ -42,5 +36,4 @@ En komplett app for å føre statistikk over spillerprestasjoner i håndball.
 - ✅ Visualisering av skudd
 - ✅ Eksport til JSON
 
-## Support
-Hvis du trenger hjelp, last opp filene til Claude og beskriv problemet!
+Løsningen er vibekodet med Claude Sonnet 4.5
