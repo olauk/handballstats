@@ -566,7 +566,7 @@ function renderStatistics() {
                                         <td class="text-center" style="font-weight: 700; color: #2563eb;">${shootingPercent}%</td>
                                         <td class="text-center">
                                             <button class="btn btn-primary" 
-                                                    onclick="showPlayerShotDetails(state.players.find(p => p.id === ${player.id}), false)"
+                                                    onclick="showPlayerShotDetails(state.players[${state.players.findIndex(p => p.id === player.id)}], false)"
                                                     style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">
                                                 Se skudd
                                             </button>
@@ -598,7 +598,7 @@ function renderStatistics() {
                     <td class="text-center" style="font-weight: 700; color: #059669;">${savePercent}%</td>
                     <td class="text-center">
                         <button class="btn btn-success" 
-                                onclick="showKeeperShotDetails(state.players.find(p => p.id === ${keeper.id}))"
+                                onclick="showKeeperShotDetails(state.players[${state.players.findIndex(p => p.id === keeper.id)}])"
                                 style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">
                             Se skudd
                         </button>
@@ -626,7 +626,7 @@ function renderStatistics() {
                 <td class="text-center" style="font-weight: 700; color: #ea580c;">${shootingPercent}%</td>
                 <td class="text-center">
                     <button class="btn btn-orange" 
-                            onclick="showPlayerShotDetails(state.opponents.find(o => o.id === ${opponent.id}), true)"
+                            onclick="showPlayerShotDetails(state.opponents[${state.opponents.findIndex(o => o.id === opponent.id)}], true)"
                             style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">
                         Se skudd
                     </button>
@@ -711,8 +711,8 @@ function renderTechnicalPopup() {
                     </button>
                 </div>
                 <div class="player-grid">
-                    ${state.players.map(player => `
-                        <button class="player-button" onclick="registerTechnicalError(state.players.find(p => p.id === ${player.id}))">
+                    ${state.players.map((player, index) => `
+                        <button class="player-button" onclick="registerTechnicalError(state.players[${index}])">
                             <span class="player-number">${player.number}</span>
                             <span class="player-name">${player.name}</span>
                         </button>
@@ -726,6 +726,8 @@ function renderTechnicalPopup() {
 function renderShotPopup() {
     const isOutside = state.tempShot?.zone === 'outside';
     const needsResult = !isOutside && !state.selectedResult;
+    
+    const playersList = state.mode === 'attack' ? state.players : state.opponents;
     
     return `
         <div id="shotPopup" class="modal hidden">
@@ -774,9 +776,9 @@ function renderShotPopup() {
                             ` : ''}
                         </h3>
                         <div class="player-grid">
-                            ${(state.mode === 'attack' ? state.players : state.opponents).map(player => `
+                            ${playersList.map((player, index) => `
                                 <button class="player-button" 
-                                        onclick="registerShot(${state.mode === 'attack' ? 'state.players' : 'state.opponents'}.find(p => p.id === ${player.id}), '${isOutside ? 'utenfor' : state.selectedResult}')">
+                                        onclick="registerShot((state.mode === 'attack' ? state.players : state.opponents)[${index}], '${isOutside ? 'utenfor' : state.selectedResult}')">
                                     <span class="player-number">${player.number}</span>
                                     <span class="player-name">${player.name}</span>
                                 </button>
