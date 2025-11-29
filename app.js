@@ -194,13 +194,20 @@ function addPlayerToTempList() {
     const nameInput = document.getElementById('playerNameInput');
     const isKeeperInput = document.getElementById('playerIsKeeperInput');
 
-    const number = parseInt(numberInput?.value);
-    const name = nameInput?.value?.trim();
+    const numberValue = numberInput?.value?.trim();
+    const nameValue = nameInput?.value?.trim();
+    const number = parseInt(numberValue);
+    const name = nameValue;
     const isKeeper = isKeeperInput?.checked || false;
 
     // Validering
-    if (!number || !name) {
+    if (!numberValue || !nameValue) {
         alert('Vennligst fyll ut både nummer og navn');
+        return;
+    }
+
+    if (isNaN(number) || number <= 0) {
+        alert('Spillernummer må være et positivt tall');
         return;
     }
 
@@ -217,7 +224,7 @@ function addPlayerToTempList() {
         APP.editingPlayerId = null;
     } else {
         // Legg til ny spiller
-        const newId = Date.now() + Math.random();
+        const newId = Date.now() + Math.floor(Math.random() * 1000);
         const newPlayer = {
             id: newId,
             number: number,
@@ -857,7 +864,7 @@ function handlePlayersFileUpload(event) {
                 players = lines.map((line, index) => {
                     const [number, name, isKeeper] = line.split(',').map(s => s.trim());
                     return {
-                        id: Date.now() + index,
+                        id: Date.now() + index + Math.floor(Math.random() * 100),
                         name: name || `Spiller ${index + 1}`,
                         number: parseInt(number) || index + 1,
                         isKeeper: isKeeper === 'true' || isKeeper === '1'
@@ -898,7 +905,7 @@ function handleOpponentsFileUpload(event) {
                 opponents = lines.map((line, index) => {
                     const [number, name] = line.split(',').map(s => s.trim());
                     return {
-                        id: Date.now() + index,
+                        id: Date.now() + index + Math.floor(Math.random() * 100),
                         name: name || `Motstander ${index + 1}`,
                         number: parseInt(number) || index + 1
                     };
@@ -922,10 +929,13 @@ function handleOpponentsFileUpload(event) {
 }
 
 function finishMatch() {
-    if (APP.events.length === 0) {
-        if (!confirm('Ingen skudd er registrert. Vil du fortsatt avslutte kampen?')) {
-            return;
-        }
+    // Bekreft at brukeren vil avslutte kampen
+    const confirmMessage = APP.events.length === 0
+        ? 'Ingen skudd er registrert. Vil du fortsatt avslutte kampen?'
+        : 'Er du sikker på at du vil avslutte kampen? Kampen vil bli lagret.';
+
+    if (!confirm(confirmMessage)) {
+        return;
     }
 
     const matchData = {
@@ -955,7 +965,7 @@ function finishMatch() {
     saveToLocalStorageImmediate();
 
     alert('Kampen er avsluttet og lagret!');
-    APP.page = 'history';
+    APP.page = 'welcome';
     render();
 }
 
