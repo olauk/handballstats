@@ -194,20 +194,27 @@ function addPlayerToTempList() {
     const nameInput = document.getElementById('playerNameInput');
     const isKeeperInput = document.getElementById('playerIsKeeperInput');
 
-    const numberValue = numberInput?.value?.trim();
-    const nameValue = nameInput?.value?.trim();
+    // Debug: Sjekk om input-elementene eksisterer
+    if (!numberInput || !nameInput) {
+        alert('FEIL: Input-felter finnes ikke i DOM. Dette er en programmeringsfeil.');
+        console.error('Missing inputs:', { numberInput, nameInput });
+        return;
+    }
+
+    const numberValue = numberInput.value?.trim();
+    const nameValue = nameInput.value?.trim();
     const number = parseInt(numberValue);
     const name = nameValue;
     const isKeeper = isKeeperInput?.checked || false;
 
     // Validering
     if (!numberValue || !nameValue) {
-        alert('Vennligst fyll ut både nummer og navn');
+        alert('Vennligst fyll ut både nummer og navn.\n\nNummer: "' + (numberValue || '(tomt)') + '"\nNavn: "' + (nameValue || '(tomt)') + '"');
         return;
     }
 
     if (isNaN(number) || number <= 0) {
-        alert('Spillernummer må være et positivt tall');
+        alert('Spillernummer må være et positivt tall.\n\nDu skrev: "' + numberValue + '"');
         return;
     }
 
@@ -951,7 +958,12 @@ function finishMatch() {
 
     APP.completedMatches.push(matchData);
 
-    // Reset match data
+    // Reset match data - nullstill alt for neste kamp
+    APP.players = [];
+    APP.opponents = [];
+    APP.homeTeam = 'Hjemmelag';
+    APP.awayTeam = 'Bortelag';
+    APP.matchDate = new Date().toISOString().split('T')[0];
     APP.events = [];
     APP.currentHalf = 1;
     APP.activeKeeper = null;
