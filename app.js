@@ -190,9 +190,18 @@ function openOpponentsManagement() {
 }
 
 function addPlayerToTempList() {
+    console.log('=== addPlayerToTempList called ===');
+    console.log('APP.managingTeam:', APP.managingTeam);
+
     const numberInput = document.getElementById('playerNumberInput');
     const nameInput = document.getElementById('playerNameInput');
     const isKeeperInput = document.getElementById('playerIsKeeperInput');
+
+    console.log('Input elements:', {
+        numberInput: numberInput,
+        nameInput: nameInput,
+        isKeeperInput: isKeeperInput
+    });
 
     // Debug: Sjekk om input-elementene eksisterer
     if (!numberInput || !nameInput) {
@@ -201,22 +210,40 @@ function addPlayerToTempList() {
         return;
     }
 
+    console.log('Input values before trim:', {
+        number: numberInput.value,
+        name: nameInput.value,
+        keeper: isKeeperInput?.checked
+    });
+
     const numberValue = numberInput.value?.trim();
     const nameValue = nameInput.value?.trim();
     const number = parseInt(numberValue);
     const name = nameValue;
     const isKeeper = isKeeperInput?.checked || false;
 
+    console.log('Parsed values:', {
+        numberValue,
+        nameValue,
+        number,
+        name,
+        isKeeper
+    });
+
     // Validering
     if (!numberValue || !nameValue) {
         alert('Vennligst fyll ut både nummer og navn.\n\nNummer: "' + (numberValue || '(tomt)') + '"\nNavn: "' + (nameValue || '(tomt)') + '"');
+        console.error('Validation failed: empty values');
         return;
     }
 
     if (isNaN(number) || number <= 0) {
         alert('Spillernummer må være et positivt tall.\n\nDu skrev: "' + numberValue + '"');
+        console.error('Validation failed: invalid number');
         return;
     }
+
+    console.log('Validation passed, adding player...');
 
     if (APP.editingPlayerId) {
         // Rediger eksisterende spiller
@@ -229,6 +256,7 @@ function addPlayerToTempList() {
             }
         }
         APP.editingPlayerId = null;
+        console.log('Player updated');
     } else {
         // Legg til ny spiller
         const newId = Date.now() + Math.floor(Math.random() * 1000);
@@ -243,6 +271,8 @@ function addPlayerToTempList() {
         }
 
         APP.tempPlayersList.push(newPlayer);
+        console.log('New player added:', newPlayer);
+        console.log('tempPlayersList now:', APP.tempPlayersList);
     }
 
     // Tøm feltene
@@ -250,7 +280,9 @@ function addPlayerToTempList() {
     if (nameInput) nameInput.value = '';
     if (isKeeperInput) isKeeperInput.checked = false;
 
+    console.log('Updating modal...');
     updatePlayersManagementModal();
+    console.log('=== addPlayerToTempList completed ===');
 }
 
 function editPlayerInTempList(playerId) {
@@ -853,21 +885,30 @@ function loadOpponentsFromFile() {
 }
 
 function handlePlayersFileUpload(event) {
+    console.log('=== handlePlayersFileUpload called ===');
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+        console.log('No file selected');
+        return;
+    }
+
+    console.log('File selected:', file.name);
 
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
             const content = e.target.result;
+            console.log('File content:', content);
             let players = [];
 
             if (file.name.endsWith('.json')) {
                 // JSON format: [{id, name, number, isKeeper}, ...]
                 players = JSON.parse(content);
+                console.log('Parsed JSON players:', players);
             } else if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
                 // CSV/TXT format: number,name,isKeeper (one per line)
                 const lines = content.split('\n').filter(line => line.trim());
+                console.log('CSV lines:', lines);
                 players = lines.map((line, index) => {
                     const [number, name, isKeeper] = line.split(',').map(s => s.trim());
                     return {
@@ -877,22 +918,30 @@ function handlePlayersFileUpload(event) {
                         isKeeper: isKeeper === 'true' || isKeeper === '1'
                     };
                 });
+                console.log('Parsed CSV players:', players);
             }
 
             if (players.length > 0) {
+                console.log('Opening popup with players:', players);
                 // Åpne popup med importerte spillere
                 APP.managingTeam = 'players';
                 APP.tempPlayersList = players;
                 APP.editingPlayerId = null;
+                console.log('APP.tempPlayersList set to:', APP.tempPlayersList);
                 showModal('playersManagementPopup');
                 updatePlayersManagementModal();
+                console.log('Modal opened and updated');
+            } else {
+                console.log('No players parsed from file');
             }
         } catch (error) {
+            console.error('Error parsing file:', error);
             alert('Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\nFormat JSON: [{"id":1,"name":"Navn","number":1,"isKeeper":false}]\nFormat CSV/TXT: nummer,navn,isKeeper');
         }
     };
     reader.readAsText(file);
     event.target.value = ''; // Reset input
+    console.log('=== handlePlayersFileUpload setup complete ===');
 }
 
 function handleOpponentsFileUpload(event) {
