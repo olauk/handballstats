@@ -1924,6 +1924,9 @@ function renderViewMatchPage() {
 // EVENT LISTENERS - THE CRITICAL PART!
 // ============================================
 
+// Global flag to track if event listeners are already attached
+let globalEventListenersAttached = false;
+
 // Lightweight function for modal buttons only - prevents re-attaching all listeners
 function attachModalEventListeners() {
     // This is called after updating modal content
@@ -1932,243 +1935,220 @@ function attachModalEventListeners() {
 }
 
 function attachEventListeners() {
+    // Unngå å legge til event listeners flere ganger
+    if (globalEventListenersAttached) {
+        // Bare re-attach spesifikke listeners som må oppdateres
+        attachFormListeners();
+        attachFileInputListeners();
+        return;
+    }
+
+    console.log('Attaching global event listeners (one-time setup)');
+    globalEventListenersAttached = true;
+
+    // Global event delegation - legges til KUN én gang
+    document.addEventListener('click', handleGlobalClick);
+
+    // Form og input listeners
+    attachFormListeners();
+    attachFileInputListeners();
+}
+
+function handleGlobalClick(e) {
+    const button = e.target.closest('[data-action]');
+    if (!button) return;
+
+    const action = button.dataset.action;
+    console.log('Global click handler - action:', action);
+
+    switch(action) {
+        case 'logout':
+            handleLogout();
+            break;
+        case 'startNewMatch':
+            startNewMatch();
+            break;
+        case 'managePlayers':
+            openPlayersManagement();
+            break;
+        case 'manageOpponents':
+            openOpponentsManagement();
+            break;
+        case 'addPlayerToList':
+            console.log('addPlayerToList button clicked');
+            addPlayerToTempList();
+            break;
+        case 'editPlayerInList':
+            editPlayerInTempList(parseInt(button.dataset.playerId));
+            break;
+        case 'removePlayerFromList':
+            removePlayerFromTempList(parseInt(button.dataset.playerId));
+            break;
+        case 'savePlayers':
+            savePlayersList();
+            break;
+        case 'cancelPlayers':
+            cancelPlayersManagement();
+            break;
+        case 'startMatch':
+            APP.page = 'match';
+            saveToLocalStorage();
+            render();
+            break;
+        case 'backToSetup':
+            APP.page = 'setup';
+            saveToLocalStorage();
+            render();
+            break;
+        case 'setHalf':
+            APP.currentHalf = parseInt(button.dataset.half);
+            saveToLocalStorage();
+            render();
+            break;
+        case 'setMode':
+            APP.mode = button.dataset.mode;
+            saveToLocalStorage();
+            render();
+            break;
+        case 'showTechnicalPopup':
+            showModal('technicalPopup');
+            break;
+        case 'closeTechnicalPopup':
+            closeModal('technicalPopup');
+            break;
+        case 'registerTechnical':
+            registerTechnicalError(parseInt(button.dataset.playerId));
+            break;
+        case 'selectResult':
+            selectShotResult(button.dataset.result);
+            break;
+        case 'registerShot':
+            registerShot(parseInt(button.dataset.playerId));
+            break;
+        case 'closeShotPopup':
+            closeModal('shotPopup');
+            APP.tempShot = null;
+            APP.selectedResult = null;
+            // Optimalisert: Oppdater kun målvisualisering for å fjerne temp marker
+            updateGoalVisualization();
+            break;
+        case 'showPlayerDetails':
+            showPlayerShotDetails(parseInt(button.dataset.playerId), false);
+            break;
+        case 'showOpponentDetails':
+            showPlayerShotDetails(parseInt(button.dataset.opponentId), true);
+            break;
+        case 'showKeeperDetails':
+            showKeeperShotDetails(parseInt(button.dataset.keeperId));
+            break;
+        case 'closeShotDetails':
+            closeModal('shotDetailsPopup');
+            APP.shotDetailsData = null;
+            // Optimalisert: Ikke re-render hele siden ved lukking av modal
+            break;
+        case 'resetMatch':
+            resetMatch();
+            break;
+        case 'exportData':
+            exportData();
+            break;
+        case 'loadPlayersFile':
+            loadPlayersFromFile();
+            break;
+        case 'loadOpponentsFile':
+            loadOpponentsFromFile();
+            break;
+        case 'finishMatch':
+            finishMatch();
+            break;
+        case 'viewHistory':
+            APP.page = 'history';
+            render();
+            break;
+        case 'viewMatch':
+            viewCompletedMatch(parseInt(button.dataset.matchId));
+            break;
+        case 'deleteMatch':
+            deleteCompletedMatch(parseInt(button.dataset.matchId));
+            break;
+        case 'setViewMode':
+            APP.mode = button.dataset.mode;
+            render();
+            break;
+    }
+}
+
+function attachFormListeners() {
     // Login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
+        // Fjern gammel listener først
+        loginForm.removeEventListener('submit', handleLogin);
         loginForm.addEventListener('submit', handleLogin);
     }
-    
+
     // Team name inputs
     const homeTeamInput = document.getElementById('homeTeamInput');
     if (homeTeamInput) {
-        homeTeamInput.addEventListener('change', (e) => {
+        homeTeamInput.onchange = (e) => {
             APP.homeTeam = e.target.value;
             saveToLocalStorage();
-        });
+        };
     }
-    
+
     const awayTeamInput = document.getElementById('awayTeamInput');
     if (awayTeamInput) {
-        awayTeamInput.addEventListener('change', (e) => {
+        awayTeamInput.onchange = (e) => {
             APP.awayTeam = e.target.value;
             saveToLocalStorage();
-        });
+        };
     }
 
     // Match date input
     const matchDateInput = document.getElementById('matchDateInput');
     if (matchDateInput) {
-        matchDateInput.addEventListener('change', (e) => {
+        matchDateInput.onchange = (e) => {
             APP.matchDate = e.target.value;
             saveToLocalStorage();
-        });
-    }
-
-    // File upload inputs
-    const playersFileInput = document.getElementById('playersFileInput');
-    if (playersFileInput) {
-        playersFileInput.addEventListener('change', handlePlayersFileUpload);
-    }
-
-    const opponentsFileInput = document.getElementById('opponentsFileInput');
-    if (opponentsFileInput) {
-        opponentsFileInput.addEventListener('change', handleOpponentsFileUpload);
+        };
     }
 
     // Keeper select
     const keeperSelect = document.getElementById('keeperSelect');
     if (keeperSelect) {
-        keeperSelect.addEventListener('change', (e) => {
+        keeperSelect.onchange = (e) => {
             const keeperId = parseInt(e.target.value);
             APP.activeKeeper = APP.players.find(p => p.id === keeperId) || null;
             saveToLocalStorage();
-        });
+        };
     }
-    
-    // Player/Opponent field updates
-    document.querySelectorAll('[data-player-id]').forEach(input => {
-        const playerId = parseInt(input.dataset.playerId);
-        const field = input.dataset.field;
-        
-        if (field === 'number') {
-            input.addEventListener('change', (e) => {
-                const player = APP.players.find(p => p.id === playerId);
-                if (player) {
-                    player.number = parseInt(e.target.value) || 0;
-                    saveToLocalStorage();
-                }
-            });
-        } else if (field === 'name') {
-            input.addEventListener('change', (e) => {
-                const player = APP.players.find(p => p.id === playerId);
-                if (player) {
-                    player.name = e.target.value;
-                    saveToLocalStorage();
-                }
-            });
-        } else if (field === 'keeper') {
-            input.addEventListener('change', (e) => {
-                const player = APP.players.find(p => p.id === playerId);
-                if (player) {
-                    player.isKeeper = e.target.checked;
-                    saveToLocalStorage();
-                    render();
-                }
-            });
-        }
-    });
-    
-    document.querySelectorAll('[data-opponent-id]').forEach(input => {
-        const opponentId = parseInt(input.dataset.opponentId);
-        const field = input.dataset.field;
-        
-        if (field === 'number') {
-            input.addEventListener('change', (e) => {
-                const opponent = APP.opponents.find(o => o.id === opponentId);
-                if (opponent) {
-                    opponent.number = parseInt(e.target.value) || 0;
-                    saveToLocalStorage();
-                }
-            });
-        } else if (field === 'name') {
-            input.addEventListener('change', (e) => {
-                const opponent = APP.opponents.find(o => o.id === opponentId);
-                if (opponent) {
-                    opponent.name = e.target.value;
-                    saveToLocalStorage();
-                }
-            });
-        }
-    });
-    
+
     // Goal area click - THE MOST IMPORTANT!
     const goalContainer = document.getElementById('goalContainer');
     if (goalContainer) {
-        goalContainer.addEventListener('click', handleGoalClick);
+        goalContainer.onclick = handleGoalClick;
     }
-    
-    // Button actions using event delegation
-    document.addEventListener('click', (e) => {
-        const button = e.target.closest('[data-action]');
-        if (!button) return;
-        
-        const action = button.dataset.action;
-        
-        switch(action) {
-            case 'logout':
-                handleLogout();
-                break;
-            case 'startNewMatch':
-                startNewMatch();
-                break;
-            case 'managePlayers':
-                openPlayersManagement();
-                break;
-            case 'manageOpponents':
-                openOpponentsManagement();
-                break;
-            case 'addPlayerToList':
-                addPlayerToTempList();
-                break;
-            case 'editPlayerInList':
-                editPlayerInTempList(parseInt(button.dataset.playerId));
-                break;
-            case 'removePlayerFromList':
-                removePlayerFromTempList(parseInt(button.dataset.playerId));
-                break;
-            case 'savePlayers':
-                savePlayersList();
-                break;
-            case 'cancelPlayers':
-                cancelPlayersManagement();
-                break;
-            case 'startMatch':
-                APP.page = 'match';
-                saveToLocalStorage();
-                render();
-                break;
-            case 'backToSetup':
-                APP.page = 'setup';
-                saveToLocalStorage();
-                render();
-                break;
-            case 'setHalf':
-                APP.currentHalf = parseInt(button.dataset.half);
-                saveToLocalStorage();
-                render();
-                break;
-            case 'setMode':
-                APP.mode = button.dataset.mode;
-                saveToLocalStorage();
-                render();
-                break;
-            case 'showTechnicalPopup':
-                showModal('technicalPopup');
-                break;
-            case 'closeTechnicalPopup':
-                closeModal('technicalPopup');
-                break;
-            case 'registerTechnical':
-                registerTechnicalError(parseInt(button.dataset.playerId));
-                break;
-            case 'selectResult':
-                selectShotResult(button.dataset.result);
-                break;
-            case 'registerShot':
-                registerShot(parseInt(button.dataset.playerId));
-                break;
-            case 'closeShotPopup':
-                closeModal('shotPopup');
-                APP.tempShot = null;
-                APP.selectedResult = null;
-                // Optimalisert: Oppdater kun målvisualisering for å fjerne temp marker
-                updateGoalVisualization();
-                break;
-            case 'showPlayerDetails':
-                showPlayerShotDetails(parseInt(button.dataset.playerId), false);
-                break;
-            case 'showOpponentDetails':
-                showPlayerShotDetails(parseInt(button.dataset.opponentId), true);
-                break;
-            case 'showKeeperDetails':
-                showKeeperShotDetails(parseInt(button.dataset.keeperId));
-                break;
-            case 'closeShotDetails':
-                closeModal('shotDetailsPopup');
-                APP.shotDetailsData = null;
-                // Optimalisert: Ikke re-render hele siden ved lukking av modal
-                break;
-            case 'resetMatch':
-                resetMatch();
-                break;
-            case 'exportData':
-                exportData();
-                break;
-            case 'loadPlayersFile':
-                loadPlayersFromFile();
-                break;
-            case 'loadOpponentsFile':
-                loadOpponentsFromFile();
-                break;
-            case 'finishMatch':
-                finishMatch();
-                break;
-            case 'viewHistory':
-                APP.page = 'history';
-                render();
-                break;
-            case 'viewMatch':
-                viewCompletedMatch(parseInt(button.dataset.matchId));
-                break;
-            case 'deleteMatch':
-                deleteCompletedMatch(parseInt(button.dataset.matchId));
-                break;
-            case 'setViewMode':
-                APP.mode = button.dataset.mode;
-                render();
-                break;
-        }
-    });
+}
+
+function attachFileInputListeners() {
+    console.log('Attaching file input listeners');
+
+    // File upload inputs
+    const playersFileInput = document.getElementById('playersFileInput');
+    if (playersFileInput) {
+        console.log('Found playersFileInput, attaching listener');
+        playersFileInput.onchange = handlePlayersFileUpload;
+    } else {
+        console.log('playersFileInput not found in DOM');
+    }
+
+    const opponentsFileInput = document.getElementById('opponentsFileInput');
+    if (opponentsFileInput) {
+        console.log('Found opponentsFileInput, attaching listener');
+        opponentsFileInput.onchange = handleOpponentsFileUpload;
+    } else {
+        console.log('opponentsFileInput not found in DOM');
+    }
 }
 
 // ============================================
