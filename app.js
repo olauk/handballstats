@@ -202,16 +202,16 @@ function openPlayersManagement() {
     APP.managingTeam = 'players';
     APP.tempPlayersList = JSON.parse(JSON.stringify(APP.players));
     APP.editingPlayerId = null;
-    showModal('playersManagementPopup');
     updatePlayersManagementModal();
+    showModal('playersManagementPopup');
 }
 
 function openOpponentsManagement() {
     APP.managingTeam = 'opponents';
     APP.tempPlayersList = JSON.parse(JSON.stringify(APP.opponents));
     APP.editingPlayerId = null;
-    showModal('playersManagementPopup');
     updatePlayersManagementModal();
+    showModal('playersManagementPopup');
 }
 
 function addPlayerToTempList() {
@@ -904,8 +904,8 @@ function handlePlayersFileUpload(event) {
                 APP.managingTeam = 'players';
                 APP.tempPlayersList = players;
                 APP.editingPlayerId = null;
-                showModal('playersManagementPopup');
                 updatePlayersManagementModal();
+                showModal('playersManagementPopup');
             }
         } catch (error) {
             alert('Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\nFormat JSON: [{"id":1,"name":"Navn","number":1,"isKeeper":false}]\nFormat CSV/TXT: nummer,navn,isKeeper');
@@ -944,8 +944,8 @@ function handleOpponentsFileUpload(event) {
                 APP.managingTeam = 'opponents';
                 APP.tempPlayersList = opponents;
                 APP.editingPlayerId = null;
-                showModal('playersManagementPopup');
                 updatePlayersManagementModal();
+                showModal('playersManagementPopup');
             }
         } catch (error) {
             alert('Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\nFormat JSON: [{"id":1,"name":"Navn","number":1}]\nFormat CSV/TXT: nummer,navn');
@@ -1894,132 +1894,19 @@ function renderViewMatchPage() {
 function attachModalEventListeners() {
     // This is called after updating modal content
     // Event delegation handles the rest, so this is just a placeholder
-    // The main event delegation in attachEventListeners() will catch modal clicks
+    // The main event delegation in setupGlobalEventListeners() will catch modal clicks
 }
 
-function attachEventListeners() {
-    // Login form
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
-    
-    // Team name inputs
-    const homeTeamInput = document.getElementById('homeTeamInput');
-    if (homeTeamInput) {
-        homeTeamInput.addEventListener('change', (e) => {
-            APP.homeTeam = e.target.value;
-            saveToLocalStorage();
-        });
-    }
-    
-    const awayTeamInput = document.getElementById('awayTeamInput');
-    if (awayTeamInput) {
-        awayTeamInput.addEventListener('change', (e) => {
-            APP.awayTeam = e.target.value;
-            saveToLocalStorage();
-        });
-    }
-
-    // Match date input
-    const matchDateInput = document.getElementById('matchDateInput');
-    if (matchDateInput) {
-        matchDateInput.addEventListener('change', (e) => {
-            APP.matchDate = e.target.value;
-            saveToLocalStorage();
-        });
-    }
-
-    // File upload inputs
-    const playersFileInput = document.getElementById('playersFileInput');
-    if (playersFileInput) {
-        playersFileInput.addEventListener('change', handlePlayersFileUpload);
-    }
-
-    const opponentsFileInput = document.getElementById('opponentsFileInput');
-    if (opponentsFileInput) {
-        opponentsFileInput.addEventListener('change', handleOpponentsFileUpload);
-    }
-
-    // Keeper select
-    const keeperSelect = document.getElementById('keeperSelect');
-    if (keeperSelect) {
-        keeperSelect.addEventListener('change', (e) => {
-            const keeperId = parseInt(e.target.value);
-            APP.activeKeeper = APP.players.find(p => p.id === keeperId) || null;
-            saveToLocalStorage();
-        });
-    }
-    
-    // Player/Opponent field updates
-    document.querySelectorAll('[data-player-id]').forEach(input => {
-        const playerId = parseInt(input.dataset.playerId);
-        const field = input.dataset.field;
-        
-        if (field === 'number') {
-            input.addEventListener('change', (e) => {
-                const player = APP.players.find(p => p.id === playerId);
-                if (player) {
-                    player.number = parseInt(e.target.value) || 0;
-                    saveToLocalStorage();
-                }
-            });
-        } else if (field === 'name') {
-            input.addEventListener('change', (e) => {
-                const player = APP.players.find(p => p.id === playerId);
-                if (player) {
-                    player.name = e.target.value;
-                    saveToLocalStorage();
-                }
-            });
-        } else if (field === 'keeper') {
-            input.addEventListener('change', (e) => {
-                const player = APP.players.find(p => p.id === playerId);
-                if (player) {
-                    player.isKeeper = e.target.checked;
-                    saveToLocalStorage();
-                    render();
-                }
-            });
-        }
-    });
-    
-    document.querySelectorAll('[data-opponent-id]').forEach(input => {
-        const opponentId = parseInt(input.dataset.opponentId);
-        const field = input.dataset.field;
-        
-        if (field === 'number') {
-            input.addEventListener('change', (e) => {
-                const opponent = APP.opponents.find(o => o.id === opponentId);
-                if (opponent) {
-                    opponent.number = parseInt(e.target.value) || 0;
-                    saveToLocalStorage();
-                }
-            });
-        } else if (field === 'name') {
-            input.addEventListener('change', (e) => {
-                const opponent = APP.opponents.find(o => o.id === opponentId);
-                if (opponent) {
-                    opponent.name = e.target.value;
-                    saveToLocalStorage();
-                }
-            });
-        }
-    });
-    
-    // Goal area click - THE MOST IMPORTANT!
-    const goalContainer = document.getElementById('goalContainer');
-    if (goalContainer) {
-        goalContainer.addEventListener('click', handleGoalClick);
-    }
-    
+// Setup global event listeners - ONLY CALLED ONCE on page load
+function setupGlobalEventListeners() {
     // Button actions using event delegation
+    // This is attached to document ONCE and never removed
     document.addEventListener('click', (e) => {
         const button = e.target.closest('[data-action]');
         if (!button) return;
-        
+
         const action = button.dataset.action;
-        
+
         switch(action) {
             case 'logout':
                 handleLogout();
@@ -2137,11 +2024,130 @@ function attachEventListeners() {
     });
 }
 
+// Attach listeners to specific elements after each render
+function attachEventListeners() {
+    // Login form
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    // Team name inputs
+    const homeTeamInput = document.getElementById('homeTeamInput');
+    if (homeTeamInput) {
+        homeTeamInput.addEventListener('change', (e) => {
+            APP.homeTeam = e.target.value;
+            saveToLocalStorage();
+        });
+    }
+    
+    const awayTeamInput = document.getElementById('awayTeamInput');
+    if (awayTeamInput) {
+        awayTeamInput.addEventListener('change', (e) => {
+            APP.awayTeam = e.target.value;
+            saveToLocalStorage();
+        });
+    }
+
+    // Match date input
+    const matchDateInput = document.getElementById('matchDateInput');
+    if (matchDateInput) {
+        matchDateInput.addEventListener('change', (e) => {
+            APP.matchDate = e.target.value;
+            saveToLocalStorage();
+        });
+    }
+
+    // File upload inputs
+    const playersFileInput = document.getElementById('playersFileInput');
+    if (playersFileInput) {
+        playersFileInput.addEventListener('change', handlePlayersFileUpload);
+    }
+
+    const opponentsFileInput = document.getElementById('opponentsFileInput');
+    if (opponentsFileInput) {
+        opponentsFileInput.addEventListener('change', handleOpponentsFileUpload);
+    }
+
+    // Keeper select
+    const keeperSelect = document.getElementById('keeperSelect');
+    if (keeperSelect) {
+        keeperSelect.addEventListener('change', (e) => {
+            const keeperId = parseInt(e.target.value);
+            APP.activeKeeper = APP.players.find(p => p.id === keeperId) || null;
+            saveToLocalStorage();
+        });
+    }
+    
+    // Player/Opponent field updates
+    document.querySelectorAll('[data-player-id]').forEach(input => {
+        const playerId = parseInt(input.dataset.playerId);
+        const field = input.dataset.field;
+        
+        if (field === 'number') {
+            input.addEventListener('change', (e) => {
+                const player = APP.players.find(p => p.id === playerId);
+                if (player) {
+                    player.number = parseInt(e.target.value) || 0;
+                    saveToLocalStorage();
+                }
+            });
+        } else if (field === 'name') {
+            input.addEventListener('change', (e) => {
+                const player = APP.players.find(p => p.id === playerId);
+                if (player) {
+                    player.name = e.target.value;
+                    saveToLocalStorage();
+                }
+            });
+        } else if (field === 'keeper') {
+            input.addEventListener('change', (e) => {
+                const player = APP.players.find(p => p.id === playerId);
+                if (player) {
+                    player.isKeeper = e.target.checked;
+                    saveToLocalStorage();
+                    render();
+                }
+            });
+        }
+    });
+    
+    document.querySelectorAll('[data-opponent-id]').forEach(input => {
+        const opponentId = parseInt(input.dataset.opponentId);
+        const field = input.dataset.field;
+        
+        if (field === 'number') {
+            input.addEventListener('change', (e) => {
+                const opponent = APP.opponents.find(o => o.id === opponentId);
+                if (opponent) {
+                    opponent.number = parseInt(e.target.value) || 0;
+                    saveToLocalStorage();
+                }
+            });
+        } else if (field === 'name') {
+            input.addEventListener('change', (e) => {
+                const opponent = APP.opponents.find(o => o.id === opponentId);
+                if (opponent) {
+                    opponent.name = e.target.value;
+                    saveToLocalStorage();
+                }
+            });
+        }
+    });
+    
+    // Goal area click - THE MOST IMPORTANT!
+    const goalContainer = document.getElementById('goalContainer');
+    if (goalContainer) {
+        goalContainer.addEventListener('click', handleGoalClick);
+    }
+}
+
 // ============================================
 // INITIALIZATION
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
     loadFromLocalStorage();
+    setupGlobalEventListeners(); // Setup global event delegation ONCE
     render();
 });
 
