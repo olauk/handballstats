@@ -48,6 +48,29 @@ const PERFORMANCE = {
 };
 
 // ============================================
+// HELPER FUNCTIONS FOR VIEWING MATCHES
+// ============================================
+// These functions return the correct data whether we're viewing a live match
+// or a completed match from history
+function getCurrentEvents() {
+    return APP.page === 'viewMatch' && APP.viewingMatch
+        ? APP.viewingMatch.events
+        : APP.events;
+}
+
+function getCurrentPlayers() {
+    return APP.page === 'viewMatch' && APP.viewingMatch
+        ? APP.viewingMatch.players
+        : APP.players;
+}
+
+function getCurrentOpponents() {
+    return APP.page === 'viewMatch' && APP.viewingMatch
+        ? APP.viewingMatch.opponents
+        : APP.opponents;
+}
+
+// ============================================
 // LOGIN & AUTH
 // ============================================
 function handleLogin(e) {
@@ -140,7 +163,8 @@ function loadFromLocalStorage() {
 function getPlayerStats(playerId, half = null) {
     // Bruk cache for å unngå å re-kalkulere statistikk ved hver render
     return PERFORMANCE.getCachedStats(`player-${playerId}-${half}`, () => {
-        const playerEvents = APP.events.filter(e =>
+        const events = getCurrentEvents();
+        const playerEvents = events.filter(e =>
             e.player?.id === playerId &&
             (half === null || e.half === half) &&
             e.mode === 'attack'
@@ -149,7 +173,7 @@ function getPlayerStats(playerId, half = null) {
             goals: playerEvents.filter(e => e.result === 'mål').length,
             saved: playerEvents.filter(e => e.result === 'redning').length,
             outside: playerEvents.filter(e => e.result === 'utenfor').length,
-            technical: APP.events.filter(e => e.player?.id === playerId && e.mode === 'technical' && (half === null || e.half === half)).length
+            technical: events.filter(e => e.player?.id === playerId && e.mode === 'technical' && (half === null || e.half === half)).length
         };
     });
 }
@@ -157,7 +181,8 @@ function getPlayerStats(playerId, half = null) {
 function getOpponentStats(opponentId, half = null) {
     // Bruk cache for å unngå å re-kalkulere statistikk ved hver render
     return PERFORMANCE.getCachedStats(`opponent-${opponentId}-${half}`, () => {
-        const opponentEvents = APP.events.filter(e =>
+        const events = getCurrentEvents();
+        const opponentEvents = events.filter(e =>
             e.opponent?.id === opponentId &&
             (half === null || e.half === half) &&
             e.mode === 'defense'
@@ -696,13 +721,13 @@ function closeModal(modalId) {
 }
 
 function showPlayerShotDetails(playerId, isOpponent = false) {
-    const player = isOpponent
-        ? APP.opponents.find(o => o.id === playerId)
-        : APP.players.find(p => p.id === playerId);
+    const players = isOpponent ? getCurrentOpponents() : getCurrentPlayers();
+    const player = players.find(p => p.id === playerId);
 
     if (!player) return;
 
-    const playerShots = APP.events.filter(e => {
+    const events = getCurrentEvents();
+    const playerShots = events.filter(e => {
         if (isOpponent) {
             return e.opponent?.id === playerId && e.zone === 'goal';
         } else {
@@ -722,10 +747,12 @@ function showPlayerShotDetails(playerId, isOpponent = false) {
 }
 
 function showKeeperShotDetails(keeperId) {
-    const keeper = APP.players.find(p => p.id === keeperId);
+    const players = getCurrentPlayers();
+    const keeper = players.find(p => p.id === keeperId);
     if (!keeper) return;
 
-    const keeperShots = APP.events.filter(e =>
+    const events = getCurrentEvents();
+    const keeperShots = events.filter(e =>
         e.keeper?.id === keeperId && e.zone === 'goal'
     );
 
