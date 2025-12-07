@@ -160,6 +160,15 @@ function loadFromLocalStorage() {
 // ============================================
 // STATISTICS FUNCTIONS
 // ============================================
+function getTeamGoals(team = 'home') {
+    const events = getCurrentEvents();
+    if (team === 'home') {
+        return events.filter(e => e.mode === 'attack' && e.result === 'mål').length;
+    } else {
+        return events.filter(e => e.mode === 'defense' && e.result === 'mål').length;
+    }
+}
+
 function getPlayerStats(playerId, half = null) {
     // Bruk cache for å unngå å re-kalkulere statistikk ved hver render
     return PERFORMANCE.getCachedStats(`player-${playerId}-${half}`, () => {
@@ -1332,11 +1341,14 @@ function renderSetupPage() {
 }
 
 function renderMatchPage() {
-    const keeperOptions = APP.players.filter(p => p.isKeeper).map(k => 
+    const keeperOptions = APP.players.filter(p => p.isKeeper).map(k =>
         `<option value="${k.id}" ${APP.activeKeeper?.id === k.id ? 'selected' : ''}>
             #${k.number} - ${k.name}
         </option>`
     ).join('');
+
+    const homeGoals = getTeamGoals('home');
+    const awayGoals = getTeamGoals('away');
 
     return `
         <div class="container">
@@ -1346,8 +1358,8 @@ function renderMatchPage() {
                         <button class="btn btn-secondary" data-action="backToSetup">
                             ← Tilbake til oppsett
                         </button>
-                        <h1 style="font-size: 1.5rem; font-weight: 700; color: #312e81;">
-                            ${APP.homeTeam} vs ${APP.awayTeam}
+                        <h1 style="font-size: 1.75rem; font-weight: 800; color: #312e81; margin: 0;">
+                            ${APP.homeTeam} <span style="color: #3b82f6;">${homeGoals}</span> - <span style="color: #f97316;">${awayGoals}</span> ${APP.awayTeam}
                         </h1>
                     </div>
                     <div class="flex" style="gap: 0.5rem; flex-wrap: wrap;">
@@ -1498,6 +1510,11 @@ function renderGoalVisualization() {
 }
 
 function renderStatistics() {
+    // Use helper functions to get correct data for both live and archived matches
+    const players = getCurrentPlayers();
+    const opponents = getCurrentOpponents();
+    const events = getCurrentEvents();
+
     if (APP.mode === 'attack') {
         return `
             <div class="card">
@@ -1533,7 +1550,7 @@ function renderStatistics() {
                             </tr>
                         </thead>
                         <tbody>
-                            ${APP.players.map(player => {
+                            ${players.map(player => {
                                 const half1 = getPlayerStats(player.id, 1);
                                 const half2 = getPlayerStats(player.id, 2);
                                 const total = getPlayerStats(player.id);
@@ -1571,14 +1588,14 @@ function renderStatistics() {
         `;
     } else {
         // Defense mode statistics
-        const keeperStats = APP.players.filter(p => p.isKeeper).map(keeper => {
-            const keeperShots = APP.events.filter(e => 
+        const keeperStats = players.filter(p => p.isKeeper).map(keeper => {
+            const keeperShots = events.filter(e =>
                 e.mode === 'defense' && e.keeper?.id === keeper.id
             );
             const totalShots = keeperShots.length;
             const saves = keeperShots.filter(e => e.result === 'redning').length;
             const savePercent = totalShots > 0 ? ((saves / totalShots) * 100).toFixed(1) : 0;
-            
+
             return `
                 <tr>
                     <td>${keeper.number}</td>
@@ -1587,7 +1604,7 @@ function renderStatistics() {
                     <td class="text-center">${saves}</td>
                     <td class="text-center" style="font-weight: 700; color: #059669;">${savePercent}%</td>
                     <td class="text-center">
-                        <button class="btn btn-success" 
+                        <button class="btn btn-success"
                                 data-action="showKeeperDetails" data-keeper-id="${keeper.id}"
                                 style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">
                             Se skudd
@@ -1597,7 +1614,7 @@ function renderStatistics() {
             `;
         }).join('');
 
-        const opponentStats = APP.opponents.map(opponent => {
+        const opponentStats = opponents.map(opponent => {
             const total = getOpponentStats(opponent.id);
             const totalShots = total.shots.length;
             const shootingPercent = totalShots > 0 ? ((total.goals / totalShots) * 100).toFixed(1) : 0;
@@ -1828,6 +1845,10 @@ function renderViewMatchPage() {
 
     const match = APP.viewingMatch;
 
+    // Calculate goals from match events
+    const homeGoals = match.events.filter(e => e.mode === 'attack' && e.result === 'mål').length;
+    const awayGoals = match.events.filter(e => e.mode === 'defense' && e.result === 'mål').length;
+
     // Temporarily set APP data to match data for rendering
     const originalData = {
         homeTeam: APP.homeTeam,
@@ -1854,8 +1875,8 @@ function renderViewMatchPage() {
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
                     <div>
-                        <h1 style="font-size: 2rem; font-weight: 800; color: #312e81;">
-                            ${match.homeTeam} vs ${match.awayTeam}
+                        <h1 style="font-size: 2rem; font-weight: 800; color: #312e81; margin: 0;">
+                            ${match.homeTeam} <span style="color: #3b82f6;">${homeGoals}</span> - <span style="color: #f97316;">${awayGoals}</span> ${match.awayTeam}
                         </h1>
                         <p style="color: #6b7280; margin-top: 0.5rem;">
                             Dato: ${new Date(match.matchDate).toLocaleDateString('no-NO')}
