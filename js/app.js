@@ -7,7 +7,7 @@ import { setupGlobalEventListeners, attachEventListeners } from './events.js';
 
 // Export render function for use in events
 export function render() {
-    renderApp(attachEventListeners);
+    renderApp(attachEventListeners, render);
 }
 
 // ============================================

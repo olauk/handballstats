@@ -6,7 +6,7 @@ import { renderMatchPage } from './match.js';
 import { renderSetupPage } from './setup.js';
 import { renderHistoryPage, renderViewMatchPage } from './history.js';
 
-export function render(attachEventListeners) {
+export function render(attachEventListeners, renderFunction) {
     const app = document.getElementById('app');
     if (!app) return;
 
@@ -24,7 +24,7 @@ export function render(attachEventListeners) {
         app.innerHTML = renderMatchPage();
     }
 
-    attachEventListeners();
+    attachEventListeners(renderFunction);
 }
 
 export function renderLoginPage() {

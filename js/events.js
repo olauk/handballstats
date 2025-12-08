@@ -18,7 +18,9 @@ import {
     selectShotResult,
     registerShot,
     registerTechnicalError,
-    updateGoalVisualization
+    updateGoalVisualization,
+    renderTechnicalPopupContent,
+    renderShotPopupContent
 } from './shots.js';
 import {
     showModal,
@@ -111,13 +113,10 @@ export function setupGlobalEventListeners(render) {
                 if (technicalModal) {
                     const modalContent = technicalModal.querySelector('.modal-content');
                     if (modalContent) {
-                        // Import and use renderTechnicalPopupContent from shots.js
-                        import('./shots.js').then(module => {
-                            modalContent.innerHTML = module.renderTechnicalPopupContent();
-                            showModal('technicalPopup');
-                        });
+                        modalContent.innerHTML = renderTechnicalPopupContent();
                     }
                 }
+                showModal('technicalPopup');
                 break;
             case 'closeTechnicalPopup':
                 closeModal('technicalPopup');
@@ -188,14 +187,13 @@ export function setupGlobalEventListeners(render) {
 }
 
 // Attach listeners to specific elements after each render
-export function attachEventListeners() {
+export function attachEventListeners(render) {
     // Login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', (e) => {
             if (handleLogin(e)) {
-                // Use the global render function
-                import('./app.js').then(module => module.render());
+                render();
             }
         });
     }
@@ -276,8 +274,7 @@ export function attachEventListeners() {
                 if (player) {
                     player.isKeeper = e.target.checked;
                     saveToLocalStorage();
-                    // Use the global render function
-                    import('./app.js').then(module => module.render());
+                    render();
                 }
             });
         }
@@ -310,19 +307,16 @@ export function attachEventListeners() {
     const goalContainer = document.getElementById('goalContainer');
     if (goalContainer) {
         goalContainer.addEventListener('click', (e) => {
-            const shotPopup = document.getElementById('shotPopup');
             if (handleGoalClick(e, showModal)) {
                 // Update shot popup content
+                const shotPopup = document.getElementById('shotPopup');
                 if (shotPopup) {
                     const modalContent = shotPopup.querySelector('.modal-content');
                     if (modalContent) {
-                        import('./shots.js').then(module => {
-                            modalContent.innerHTML = module.renderShotPopupContent();
-                        });
+                        modalContent.innerHTML = renderShotPopupContent();
                     }
                 }
-                // Use the global render function
-                import('./app.js').then(module => module.render());
+                render();
             }
         });
     }
