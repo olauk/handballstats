@@ -3,7 +3,7 @@
 // ============================================
 import { APP } from './state.js';
 import { saveToLocalStorage } from './storage.js';
-import { handleLogin, handleLogout, startNewMatch } from './auth.js';
+import { handleLogin, handleLogout, handleRegister, handlePasswordReset, startNewMatch } from './auth.js';
 import {
     openPlayersManagement,
     openOpponentsManagement,
@@ -182,6 +182,18 @@ export function setupGlobalEventListeners(render) {
                 APP.mode = button.dataset.mode;
                 render();
                 break;
+            case 'showRegister':
+                APP.page = 'register';
+                render();
+                break;
+            case 'showLogin':
+                APP.page = 'login';
+                render();
+                break;
+            case 'showPasswordReset':
+                APP.page = 'reset-password';
+                render();
+                break;
         }
     });
 }
@@ -191,8 +203,28 @@ export function attachEventListeners(render) {
     // Login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
-            if (handleLogin(e)) {
+        loginForm.addEventListener('submit', async (e) => {
+            if (await handleLogin(e)) {
+                render();
+            }
+        });
+    }
+
+    // Register form
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            if (await handleRegister(e)) {
+                render();
+            }
+        });
+    }
+
+    // Password reset form
+    const passwordResetForm = document.getElementById('passwordResetForm');
+    if (passwordResetForm) {
+        passwordResetForm.addEventListener('submit', async (e) => {
+            if (await handlePasswordReset(e)) {
                 render();
             }
         });

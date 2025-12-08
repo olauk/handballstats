@@ -28,6 +28,17 @@ export function render(attachEventListeners, renderFunction) {
 }
 
 export function renderLoginPage() {
+    const showRegister = APP.page === 'register';
+    const showReset = APP.page === 'reset-password';
+
+    if (showRegister) {
+        return renderRegisterPage();
+    }
+
+    if (showReset) {
+        return renderPasswordResetPage();
+    }
+
     return `
         <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
             <div class="card" style="max-width: 28rem; width: 100%;">
@@ -36,21 +47,22 @@ export function renderLoginPage() {
                         Handball Analytics
                     </h1>
                     <p style="font-size: 1.125rem; color: #4b5563;">
-                        Før skuddstatistikk, redninger og tekniske feil på dine spillere
+                        Profesjonell kampstatistikk for håndball
                     </p>
                 </div>
 
                 <form id="loginForm" style="space-y: 1rem;">
                     <div>
                         <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
-                            Brukernavn
+                            E-post
                         </label>
                         <input
-                            type="text"
+                            type="email"
                             id="username"
                             name="username"
-                            placeholder="Skriv inn brukernavn"
+                            placeholder="din@epost.no"
                             required
+                            autocomplete="email"
                             style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
                         >
                     </div>
@@ -65,6 +77,7 @@ export function renderLoginPage() {
                             name="password"
                             placeholder="Skriv inn passord"
                             required
+                            autocomplete="current-password"
                             style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
                         >
                     </div>
@@ -77,10 +90,161 @@ export function renderLoginPage() {
                     </button>
                 </form>
 
-                <div style="margin-top: 1.5rem; padding: 1rem; background: #eff6ff; border-radius: 0.5rem; border: 1px solid #bfdbfe;">
-                    <p style="font-size: 0.875rem; color: #1e40af; text-align: center;">
-                        <strong>Demo:</strong> Bruk "Ola" / "handball"
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button class="btn btn-secondary" data-action="showRegister" style="width: 100%; margin-bottom: 0.5rem;">
+                        Opprett ny bruker
+                    </button>
+                    <button class="btn btn-secondary" data-action="showPasswordReset" style="font-size: 0.875rem; padding: 0.5rem 1rem;">
+                        Glemt passord?
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderRegisterPage() {
+    return `
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+            <div class="card" style="max-width: 28rem; width: 100%;">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81; margin-bottom: 0.5rem;">
+                        Opprett bruker
+                    </h1>
+                    <p style="font-size: 1rem; color: #4b5563;">
+                        Registrer deg for å lagre dine kamper i skyen
                     </p>
+                </div>
+
+                <form id="registerForm" style="space-y: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
+                            Navn *
+                        </label>
+                        <input
+                            type="text"
+                            id="registerName"
+                            placeholder="Ditt navn"
+                            required
+                            autocomplete="name"
+                            style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
+                        >
+                    </div>
+
+                    <div style="margin-top: 1rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
+                            E-post *
+                        </label>
+                        <input
+                            type="email"
+                            id="registerEmail"
+                            placeholder="din@epost.no"
+                            required
+                            autocomplete="email"
+                            style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
+                        >
+                    </div>
+
+                    <div style="margin-top: 1rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
+                            Passord * (min 6 tegn)
+                        </label>
+                        <input
+                            type="password"
+                            id="registerPassword"
+                            placeholder="Minst 6 tegn"
+                            required
+                            autocomplete="new-password"
+                            minlength="6"
+                            style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
+                        >
+                    </div>
+
+                    <div style="margin-top: 1rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
+                            Bekreft passord *
+                        </label>
+                        <input
+                            type="password"
+                            id="registerConfirmPassword"
+                            placeholder="Skriv passord igjen"
+                            required
+                            autocomplete="new-password"
+                            minlength="6"
+                            style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
+                        >
+                    </div>
+
+                    <div style="margin-top: 1rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
+                            Hjemmelag (valgfritt)
+                        </label>
+                        <input
+                            type="text"
+                            id="registerHomeTeam"
+                            placeholder="F.eks. Byåsen"
+                            style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
+                        >
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="btn btn-success"
+                        style="width: 100%; margin-top: 1.5rem; padding: 1rem; font-size: 1.125rem; font-weight: 700;">
+                        Opprett bruker
+                    </button>
+                </form>
+
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button class="btn btn-secondary" data-action="showLogin" style="font-size: 0.875rem; padding: 0.5rem 1rem;">
+                        Tilbake til innlogging
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderPasswordResetPage() {
+    return `
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+            <div class="card" style="max-width: 28rem; width: 100%;">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81; margin-bottom: 0.5rem;">
+                        Tilbakestill passord
+                    </h1>
+                    <p style="font-size: 1rem; color: #4b5563;">
+                        Skriv inn e-posten din, så sender vi deg en link
+                    </p>
+                </div>
+
+                <form id="passwordResetForm" style="space-y: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
+                            E-post
+                        </label>
+                        <input
+                            type="email"
+                            id="resetEmail"
+                            placeholder="din@epost.no"
+                            required
+                            autocomplete="email"
+                            style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;"
+                        >
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        style="width: 100%; margin-top: 1.5rem; padding: 1rem; font-size: 1.125rem; font-weight: 700;">
+                        Send tilbakestillings-link
+                    </button>
+                </form>
+
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button class="btn btn-secondary" data-action="showLogin" style="font-size: 0.875rem; padding: 0.5rem 1rem;">
+                        Tilbake til innlogging
+                    </button>
                 </div>
             </div>
         </div>
