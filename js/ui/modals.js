@@ -42,8 +42,9 @@ export function showPlayerShotDetails(playerId, isOpponent = false) {
         isOpponent
     };
 
-    // Optimalisert: Oppdater kun modal-innholdet, ikke hele siden
+    // Oppdater modal-innhold FØRST
     updateShotDetailsModal();
+    // Deretter vis modalen
     showModal('shotDetailsPopup');
 }
 
@@ -63,8 +64,9 @@ export function showKeeperShotDetails(keeperId) {
         isKeeper: true
     };
 
-    // Optimalisert: Oppdater kun modal-innholdet, ikke hele siden
+    // Oppdater modal-innhold FØRST
     updateShotDetailsModal();
+    // Deretter vis modalen
     showModal('shotDetailsPopup');
 }
 
@@ -72,13 +74,18 @@ export function showKeeperShotDetails(keeperId) {
 export function updateShotDetailsModal() {
     const modal = document.getElementById('shotDetailsPopup');
     if (!modal) {
-        // Modal eksisterer ikke ennå, la render() ta seg av det
+        // Modal eksisterer ikke ennå, den vil bli lastet på neste render
+        console.warn('shotDetailsPopup modal not found in DOM');
         return;
     }
 
     const modalContent = modal.querySelector('.modal-content');
-    if (modalContent && APP.shotDetailsData) {
-        modalContent.innerHTML = renderShotDetailsPopupContent();
+    if (modalContent) {
+        if (APP.shotDetailsData) {
+            modalContent.innerHTML = renderShotDetailsPopupContent();
+        } else {
+            console.warn('No shotDetailsData available');
+        }
     }
 }
 

@@ -156,5 +156,9 @@ export function renderViewMatchPage() {
 
             ${statsContent}
         </div>
+
+        <div id="shotDetailsPopup" class="modal hidden">
+            <div class="modal-content"></div>
+        </div>
     `;
 }
