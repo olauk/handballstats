@@ -4,7 +4,7 @@
 import { APP, PERFORMANCE } from './state.js';
 import { saveToLocalStorage } from './storage.js';
 
-export function handleGoalClick(e, showModal) {
+export function handleGoalClick(e) {
     const goalArea = document.getElementById('goalArea');
     const goalContainer = document.getElementById('goalContainer');
 
@@ -37,12 +37,11 @@ export function handleGoalClick(e, showModal) {
             zone: 'outside'
         };
     } else {
-        return; // Clicked on something else (like a shot marker)
+        return false; // Clicked on something else (like a shot marker)
     }
 
     APP.selectedResult = null;
-    showModal('shotPopup');
-    return true; // Signal that render should be called
+    return true; // Signal that a shot position was registered
 }
 
 export function selectShotResult(result, attachModalEventListeners) {

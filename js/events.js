@@ -307,8 +307,11 @@ export function attachEventListeners(render) {
     const goalContainer = document.getElementById('goalContainer');
     if (goalContainer) {
         goalContainer.addEventListener('click', (e) => {
-            if (handleGoalClick(e, showModal)) {
-                // Update shot popup content
+            if (handleGoalClick(e)) {
+                // First render to ensure modal exists in DOM
+                render();
+
+                // Then update modal content and show it
                 const shotPopup = document.getElementById('shotPopup');
                 if (shotPopup) {
                     const modalContent = shotPopup.querySelector('.modal-content');
@@ -316,7 +319,7 @@ export function attachEventListeners(render) {
                         modalContent.innerHTML = renderShotPopupContent();
                     }
                 }
-                render();
+                showModal('shotPopup');
             }
         });
     }
