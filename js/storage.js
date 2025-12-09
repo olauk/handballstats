@@ -30,7 +30,13 @@ export function loadFromLocalStorage() {
         const saved = localStorage.getItem('handballApp');
         if (saved) {
             const data = JSON.parse(saved);
-            // Restore everything except functions
+
+            // IMPORTANT: Don't load auth-related state from localStorage
+            // Firebase Auth is the single source of truth for authentication
+            delete data.currentUser;
+            delete data.page; // Always start on login page, Firebase Auth will update if user is logged in
+
+            // Restore everything else (match data, player data, completed matches, etc.)
             Object.assign(APP, data);
         }
     } catch (e) {

@@ -280,9 +280,12 @@ export function startNewMatch() {
 // AUTH STATE OBSERVER
 // ============================================
 export function initAuthStateObserver(onAuthStateChanged) {
+    console.log('🔐 Initializing Firebase Auth State Observer...');
+
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             // User is signed in
+            console.log('✅ User signed in:', user.email);
             try {
                 const userDoc = await db.collection('users').doc(user.uid).get();
                 const userData = userDoc.data();
@@ -294,17 +297,21 @@ export function initAuthStateObserver(onAuthStateChanged) {
                     homeTeam: userData?.homeTeam || 'Mitt lag'
                 };
 
+                console.log('✅ User profile loaded:', APP.currentUser.displayName);
+
                 // Only change page if we're on login page
-                if (APP.page === 'login') {
+                if (APP.page === 'login' || APP.page === 'register' || APP.page === 'reset-password') {
                     APP.page = 'welcome';
+                    console.log('📄 Redirecting to welcome page');
                 }
 
                 onAuthStateChanged();
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                console.error('❌ Error fetching user data:', error);
             }
         } else {
             // User is signed out
+            console.log('🚪 User signed out or not authenticated');
             APP.currentUser = null;
             APP.page = 'login';
             onAuthStateChanged();

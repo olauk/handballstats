@@ -2,6 +2,13 @@
 // FIREBASE CONFIGURATION
 // ============================================
 
+// Check if Firebase SDK is loaded
+if (typeof firebase === 'undefined') {
+  console.error('❌ Firebase SDK not loaded! Make sure Firebase scripts are loaded before app.js');
+  alert('Feil: Firebase kunne ikke lastes. Vennligst last inn siden på nytt.');
+  throw new Error('Firebase SDK not loaded');
+}
+
 // Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAdsBb-RR200g_KVfV4t0dbRhk7dfWseG8",
@@ -13,7 +20,14 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase (using compat version for easier integration)
-firebase.initializeApp(firebaseConfig);
+try {
+  firebase.initializeApp(firebaseConfig);
+  console.log('✅ Firebase initialized successfully');
+} catch (error) {
+  console.error('❌ Firebase initialization failed:', error);
+  alert('Feil ved Firebase-initialisering: ' + error.message);
+  throw error;
+}
 
 // Export Firebase services
 export const auth = firebase.auth();
@@ -23,10 +37,12 @@ export const db = firebase.firestore();
 db.enablePersistence()
   .catch((err) => {
     if (err.code === 'failed-precondition') {
-      console.warn('Firestore persistence failed: Multiple tabs open');
+      console.warn('⚠️ Firestore persistence failed: Multiple tabs open');
     } else if (err.code === 'unimplemented') {
-      console.warn('Firestore persistence not available in this browser');
+      console.warn('⚠️ Firestore persistence not available in this browser');
+    } else {
+      console.error('❌ Firestore persistence error:', err);
     }
   });
 
-console.log('✅ Firebase initialized successfully');
+console.log('✅ Firebase Auth and Firestore ready');

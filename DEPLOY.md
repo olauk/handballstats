@@ -32,18 +32,28 @@ firebase projects:list
 
 Du skal se `handballstats-c80f3` i listen.
 
-### 3. Deploy appen
+### 3. Deploy appen og sikkerhet
 
-Når du er klar til å deploye:
+**VIKTIG:** Første gang må du deploye både hosting og Firestore security rules!
 
 ```bash
 firebase deploy
 ```
 
-Eller kun deploy hosting (anbefalt):
+Dette deployer:
+- ✅ Hosting (nettsiden)
+- ✅ Firestore Security Rules (databse-sikkerhet)
+
+**Påfølgende deployments** (kun nettside):
 
 ```bash
 firebase deploy --only hosting
+```
+
+**Kun oppdatere security rules:**
+
+```bash
+firebase deploy --only firestore:rules
 ```
 
 ### 4. Åpne appen
@@ -96,13 +106,25 @@ Appen vil være tilgjengelig på:
 - **Produksjon**: https://handballstats-c80f3.web.app
 - **Alternativ URL**: https://handballstats-c80f3.firebaseapp.com
 
-## Sikkerhet
+## Sikkerhet 🔒
 
-Firebase Hosting inkluderer automatisk:
+### Firebase Hosting inkluderer automatisk:
 - ✅ HTTPS/SSL-sertifikat
 - ✅ Globalt CDN (Content Delivery Network)
 - ✅ DDoS-beskyttelse
 - ✅ Gratis for opp til 10 GB lagring og 360 MB/dag trafikk
+
+### Firestore Security Rules:
+Prosjektet inkluderer `firestore.rules` som sikrer at:
+- ✅ Kun innloggede brukere kan se data
+- ✅ Brukere kan bare se sine egne kamper
+- ✅ Ingen kan endre andres data
+- ✅ Beskyttelse mot uautorisert tilgang
+
+**Les mer:** Se `SECURITY.md` for detaljert sikkerhetsinformasjon og beste praksis.
+
+### Er det trygt å ha Firebase API-nøkkel i GitHub?
+**JA!** Firebase API-nøkler er designet for å være offentlige. Sikkerheten kommer fra Firestore Security Rules og Authentication, ikke fra å skjule API-nøkkelen. Les mer i `SECURITY.md`.
 
 ---
 
