@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Authentication State</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .info { color: #00ff00; }
+        .warning { color: #ffff00; }
+        .error { color: #ff0000; }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Authentication State</h1>
+    <div id="output"></div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = message;
+            output.appendChild(div);
+        }
+
+        // Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyAdsBb-RR200g_KVfV4t0dbRhk7dfWseG8",
+          authDomain: "handballstats-c80f3.firebaseapp.com",
+          projectId: "handballstats-c80f3",
+          storageBucket: "handballstats-c80f3.firebasestorage.app",
+          messagingSenderId: "748340756980",
+          appId: "1:748340756980:web:0d819c771d6bcde824f9a1"
+        };
+
+        log('=== Initializing Firebase ===');
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        log('✅ Firebase initialized');
+
+        log('\n=== Checking localStorage ===');
+        const handballApp = localStorage.getItem('handballApp');
+        if (handballApp) {
+            try {
+                const data = JSON.parse(handballApp);
+                log('✅ handballApp found in localStorage:');
+                log('  - currentUser: ' + JSON.stringify(data.currentUser, null, 2));
+                log('  - page: ' + data.page);
+            } catch (e) {
+                log('❌ Error parsing handballApp: ' + e.message, 'error');
+            }
+        } else {
+            log('ℹ️ No handballApp in localStorage');
+        }
+
+        // Check for Firebase auth in localStorage
+        log('\n=== Checking Firebase Auth localStorage ===');
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.includes('firebase')) {
+                log('  - ' + key);
+            }
+        }
+
+        log('\n=== Checking Current Firebase Auth State ===');
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                log('✅ USER IS LOGGED IN:', 'warning');
+                log('  - UID: ' + user.uid);
+                log('  - Email: ' + user.email);
+                log('  - Display Name: ' + user.displayName);
+
+                try {
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    if (userDoc.exists) {
+                        log('  - Firestore profile: ' + JSON.stringify(userDoc.data(), null, 2));
+                    } else {
+                        log('  - No Firestore profile found', 'warning');
+                    }
+                } catch (e) {
+                    log('  - Error fetching Firestore profile: ' + e.message, 'error');
+                }
+
+                log('\n=== Actions ===');
+                const logoutBtn = document.createElement('button');
+                logoutBtn.textContent = 'LOGOUT AND CLEAR ALL DATA';
+                logoutBtn.onclick = async () => {
+                    await auth.signOut();
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    log('\n✅ Logged out and cleared all data!', 'info');
+                    log('Refresh the page to see the login screen.', 'info');
+                };
+                output.appendChild(logoutBtn);
+
+            } else {
+                log('ℹ️ NO USER LOGGED IN', 'info');
+                log('This is correct - you should see the login page.');
+            }
+
+            const goToAppBtn = document.createElement('button');
+            goToAppBtn.textContent = 'GO TO MAIN APP';
+            goToAppBtn.onclick = () => window.location.href = 'index.html';
+            output.appendChild(goToAppBtn);
+        });
+    </script>
+</body>
+</html>
