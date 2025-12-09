@@ -10,7 +10,8 @@ export function render(attachEventListeners, renderFunction) {
     const app = document.getElementById('app');
     if (!app) return;
 
-    if (APP.page === 'login') {
+    // Authentication pages (login, register, reset-password)
+    if (APP.page === 'login' || APP.page === 'register' || APP.page === 'reset-password') {
         app.innerHTML = renderLoginPage();
     } else if (APP.page === 'welcome') {
         app.innerHTML = renderWelcomePage();
