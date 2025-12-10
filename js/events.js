@@ -183,14 +183,18 @@ export function setupGlobalEventListeners(render) {
                 render();
                 break;
             case 'showRegister':
+                console.log('🔵 Button clicked: showRegister'); // DEBUG
                 APP.page = 'register';
+                console.log('→ Set APP.page to:', APP.page); // DEBUG
                 render();
                 break;
             case 'showLogin':
+                console.log('🔵 Button clicked: showLogin'); // DEBUG
                 APP.page = 'login';
                 render();
                 break;
             case 'showPasswordReset':
+                console.log('🔵 Button clicked: showPasswordReset'); // DEBUG
                 APP.page = 'reset-password';
                 render();
                 break;
