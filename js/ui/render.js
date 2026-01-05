@@ -10,7 +10,11 @@ export function render(attachEventListeners, renderFunction) {
     const app = document.getElementById('app');
     if (!app) return;
 
-    if (APP.page === 'login') {
+    console.log('🎨 Rendering page:', APP.page); // DEBUG
+
+    // Authentication pages (login, register, reset-password)
+    if (APP.page === 'login' || APP.page === 'register' || APP.page === 'reset-password') {
+        console.log('→ Showing auth page for:', APP.page); // DEBUG
         app.innerHTML = renderLoginPage();
     } else if (APP.page === 'welcome') {
         app.innerHTML = renderWelcomePage();
@@ -21,6 +25,7 @@ export function render(attachEventListeners, renderFunction) {
     } else if (APP.page === 'viewMatch') {
         app.innerHTML = renderViewMatchPage();
     } else {
+        console.log('⚠️ FALLTHROUGH: Showing match page for unknown page:', APP.page); // DEBUG
         app.innerHTML = renderMatchPage();
     }
 
