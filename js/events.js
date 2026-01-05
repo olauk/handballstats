@@ -166,7 +166,9 @@ export function setupGlobalEventListeners(render) {
                 loadOpponentsFromFile();
                 break;
             case 'finishMatch':
-                if (finishMatch()) render();
+                finishMatch().then(success => {
+                    if (success) render();
+                });
                 break;
             case 'viewHistory':
                 APP.page = 'history';
@@ -176,7 +178,9 @@ export function setupGlobalEventListeners(render) {
                 if (viewCompletedMatch(parseInt(button.dataset.matchId))) render();
                 break;
             case 'deleteMatch':
-                if (deleteCompletedMatch(parseInt(button.dataset.matchId))) render();
+                deleteCompletedMatch(parseInt(button.dataset.matchId)).then(success => {
+                    if (success) render();
+                });
                 break;
             case 'setViewMode':
                 APP.mode = button.dataset.mode;

@@ -3,6 +3,7 @@
 // ============================================
 import { APP, PERFORMANCE } from './state.js';
 import { saveToLocalStorageImmediate } from './storage.js';
+import { saveCompletedMatchToFirestore, deleteCompletedMatchFromFirestore } from './firestore-storage.js';
 
 export function loadPlayersFromFile() {
     const fileInput = document.getElementById('playersFileInput');
@@ -97,7 +98,7 @@ export function handleOpponentsFileUpload(event, updatePlayersManagementModal, s
     event.target.value = ''; // Reset input
 }
 
-export function finishMatch() {
+export async function finishMatch() {
     // Bekreft at brukeren vil avslutte kampen
     const confirmMessage = APP.events.length === 0
         ? 'Ingen skudd er registrert. Vil du fortsatt avslutte kampen?'
@@ -120,6 +121,10 @@ export function finishMatch() {
 
     APP.completedMatches.push(matchData);
 
+    // Save to both localStorage and Firestore
+    saveToLocalStorageImmediate();
+    await saveCompletedMatchToFirestore(matchData);
+
     // Reset match data
     APP.events = [];
     APP.currentHalf = 1;
@@ -130,8 +135,6 @@ export function finishMatch() {
 
     // Invalider cache
     PERFORMANCE.invalidateStatsCache();
-
-    saveToLocalStorageImmediate();
 
     alert('Kampen er avsluttet og lagret!');
     APP.page = 'welcome';
@@ -156,10 +159,14 @@ export function exportData() {
     a.click();
 }
 
-export function deleteCompletedMatch(matchId) {
+export async function deleteCompletedMatch(matchId) {
     if (confirm('Er du sikker på at du vil slette denne kampen?')) {
         APP.completedMatches = APP.completedMatches.filter(m => m.id !== matchId);
+
+        // Delete from both localStorage and Firestore
         saveToLocalStorageImmediate();
+        await deleteCompletedMatchFromFirestore(matchId);
+
         return true;
     }
     return false;

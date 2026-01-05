@@ -4,6 +4,7 @@
 import { APP, PERFORMANCE } from './state.js';
 import { saveToLocalStorageImmediate } from './storage.js';
 import { auth, db } from './firebase-config.js';
+import { migrateLocalStorageToFirestore, syncFromFirestore } from './firestore-storage.js';
 
 // ============================================
 // REGISTRATION
@@ -298,6 +299,12 @@ export function initAuthStateObserver(onAuthStateChanged) {
                 };
 
                 console.log('✅ User profile loaded:', APP.currentUser.displayName);
+
+                // Migrate localStorage data to Firestore (first time only)
+                await migrateLocalStorageToFirestore();
+
+                // Sync data from Firestore
+                await syncFromFirestore();
 
                 // Only change page if we're on login page
                 if (APP.page === 'login' || APP.page === 'register' || APP.page === 'reset-password') {

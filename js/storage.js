@@ -1,7 +1,8 @@
 // ============================================
-// LOCAL STORAGE
+// LOCAL STORAGE + FIRESTORE CLOUD STORAGE
 // ============================================
 import { APP, PERFORMANCE } from './state.js';
+import { saveMatchToFirestoreDebounced } from './firestore-storage.js';
 
 export function saveToLocalStorage() {
     // Debounce: Vent 300ms før lagring for å unngå for mange skriveoperasjoner
@@ -9,6 +10,9 @@ export function saveToLocalStorage() {
     PERFORMANCE.saveTimeout = setTimeout(() => {
         try {
             localStorage.setItem('handballApp', JSON.stringify(APP));
+
+            // Also save to Firestore (debounced)
+            saveMatchToFirestoreDebounced();
         } catch (e) {
             console.error('Kunne ikke lagre til localStorage:', e);
         }
@@ -20,6 +24,9 @@ export function saveToLocalStorageImmediate() {
     clearTimeout(PERFORMANCE.saveTimeout);
     try {
         localStorage.setItem('handballApp', JSON.stringify(APP));
+
+        // Also save to Firestore (debounced - will save after 1 second)
+        saveMatchToFirestoreDebounced();
     } catch (e) {
         console.error('Kunne ikke lagre til localStorage:', e);
     }
