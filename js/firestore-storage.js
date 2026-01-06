@@ -129,14 +129,24 @@ export async function loadCompletedMatchesFromFirestore() {
 
     try {
         const userId = auth.currentUser.uid;
-        const matchesSnapshot = await db.collection('users').doc(userId).collection('matches')
-            .where('status', '==', 'completed')
-            .orderBy('completedAt', 'desc')
-            .get();
+
+        // Get all matches from the user's collection
+        const matchesSnapshot = await db.collection('users').doc(userId).collection('matches').get();
 
         const matches = [];
         matchesSnapshot.forEach(doc => {
-            matches.push(doc.data());
+            const data = doc.data();
+            // Filter out the 'active' document and only include completed matches
+            if (doc.id !== 'active' && data.status === 'completed') {
+                matches.push(data);
+            }
+        });
+
+        // Sort by completedAt on the client side
+        matches.sort((a, b) => {
+            const aTime = a.completedAt?.toMillis?.() || 0;
+            const bTime = b.completedAt?.toMillis?.() || 0;
+            return bTime - aTime; // Descending order (newest first)
         });
 
         console.log(`✅ Loaded ${matches.length} completed matches from Firestore`);
@@ -210,10 +220,10 @@ export async function migrateLocalStorageToFirestore() {
         }
 
         // Mark migration as complete
-        await db.collection('users').doc(userId).update({
+        await db.collection('users').doc(userId).set({
             migrated: true,
             migratedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        }, { merge: true });
 
         console.log(`✅ Migration complete! Migrated ${migratedCount} matches to Firestore`);
         return true;
