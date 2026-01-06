@@ -107,7 +107,8 @@ export async function saveCompletedMatchToFirestore(matchData) {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        await db.collection('users').doc(userId).collection('matches').doc(matchId).set(firestoreMatchData);
+        // Convert matchId to string for Firestore document ID
+        await db.collection('users').doc(userId).collection('matches').doc(matchId.toString()).set(firestoreMatchData);
 
         console.log('✅ Completed match saved to Firestore:', matchId);
         return matchId;
