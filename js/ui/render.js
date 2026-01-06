@@ -24,8 +24,11 @@ export function render(attachEventListeners, renderFunction) {
         app.innerHTML = renderHistoryPage();
     } else if (APP.page === 'viewMatch') {
         app.innerHTML = renderViewMatchPage();
+    } else if (APP.page === 'match') {
+        console.log('→ Showing active match page'); // DEBUG
+        app.innerHTML = renderMatchPage();
     } else {
-        console.log('⚠️ FALLTHROUGH: Showing match page for unknown page:', APP.page); // DEBUG
+        console.warn('⚠️ Unknown page:', APP.page, '- defaulting to match page'); // DEBUG
         app.innerHTML = renderMatchPage();
     }
 
