@@ -99,6 +99,27 @@ export function handleOpponentsFileUpload(event, updatePlayersManagementModal, s
 }
 
 export async function finishMatch() {
+    // Check if there are any events in second half
+    const secondHalfEvents = APP.events.filter(e => e.half === 2);
+    const hasGoalsOrSaves = secondHalfEvents.some(e =>
+        e.result === 'mål' || e.result === 'redning'
+    );
+
+    // Warn if no goals or saves in second half
+    if (APP.events.length > 0 && !hasGoalsOrSaves) {
+        const secondHalfWarning = confirm(
+            '⚠️ Det er ikke registrert mål eller redninger i 2. omgang.\n\n' +
+            'Vil du gå tilbake til kampen for å fortsette registreringen?\n\n' +
+            'Klikk OK for å gå tilbake, eller Avbryt for å avslutte kampen.'
+        );
+
+        if (secondHalfWarning) {
+            // User wants to go back to the match
+            return false;
+        }
+        // User chose to finish anyway - continue with normal flow
+    }
+
     // Bekreft at brukeren vil avslutte kampen
     const confirmMessage = APP.events.length === 0
         ? 'Ingen skudd er registrert. Vil du fortsatt avslutte kampen?'

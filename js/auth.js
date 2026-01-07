@@ -260,8 +260,8 @@ export function startNewMatch() {
     // Nullstill spillerdata, men behold kamphistorikk
     APP.players = [];
     APP.opponents = [];
-    APP.homeTeam = APP.currentUser?.homeTeam || 'Hjemmelag';
-    APP.awayTeam = 'Bortelag';
+    APP.homeTeam = APP.currentUser?.homeTeam || 'Eget lag';
+    APP.awayTeam = 'Motstander';
     APP.matchDate = new Date().toISOString().split('T')[0];
     APP.events = [];
     APP.currentHalf = 1;

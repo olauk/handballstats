@@ -4,8 +4,8 @@
 export const APP = {
     currentUser: null,
     page: 'login', // 'login', 'setup', 'match', 'history'
-    homeTeam: 'Hjemmelag',
-    awayTeam: 'Bortelag',
+    homeTeam: 'Eget lag',
+    awayTeam: 'Motstander',
     matchDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
     currentHalf: 1,
     players: [],
