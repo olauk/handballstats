@@ -44,8 +44,8 @@ export function renderHistoryPage() {
                             <thead>
                                 <tr>
                                     <th>Dato</th>
-                                    <th>Hjemmelag</th>
-                                    <th>Bortelag</th>
+                                    <th>Eget lag</th>
+                                    <th>Motstander</th>
                                     <th class="text-center">Skudd</th>
                                     <th class="text-center">Mål</th>
                                     <th class="text-center">Handlinger</th>

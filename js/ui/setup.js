@@ -23,14 +23,14 @@ export function renderSetupPage() {
 
                 <div class="grid-2 mb-6">
                     <div>
-                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Hjemmelag</label>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Eget lag</label>
                         <input type="text" id="homeTeamInput" value="${APP.homeTeam}"
-                               data-field="homeTeam" placeholder="Navn på hjemmelag">
+                               data-field="homeTeam" placeholder="Navn på eget lag">
                     </div>
                     <div>
-                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Bortelag</label>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Motstander</label>
                         <input type="text" id="awayTeamInput" value="${APP.awayTeam}"
-                               data-field="awayTeam" placeholder="Navn på bortelag">
+                               data-field="awayTeam" placeholder="Navn på motstander">
                     </div>
                 </div>
 

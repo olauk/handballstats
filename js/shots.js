@@ -5,6 +5,23 @@ import { APP, PERFORMANCE } from './state.js';
 import { saveToLocalStorage } from './storage.js';
 
 export function handleGoalClick(e) {
+    // Validate keeper selection if in defense mode
+    if (APP.mode === 'defense') {
+        if (!APP.activeKeeper) {
+            // Auto-select first keeper if available
+            const firstKeeper = APP.players.find(p => p.isKeeper);
+            if (firstKeeper) {
+                APP.activeKeeper = firstKeeper;
+                console.log('🧤 Auto-selected keeper:', firstKeeper.name);
+                // Save and re-render to show selected keeper
+                saveToLocalStorage();
+            } else {
+                alert('Du må velge en aktiv keeper før du kan registrere forsvar!\n\nGå til oppsettet og merk minst én spiller som keeper.');
+                return false;
+            }
+        }
+    }
+
     const goalArea = document.getElementById('goalArea');
     const goalContainer = document.getElementById('goalContainer');
 
