@@ -225,15 +225,15 @@ export function updateGoalVisualization() {
         goalArea.appendChild(marker);
     });
 
-    // Add outside markers
-    outsideShots.forEach((event, index) => {
-        const leftPosition = 10 + (index % 10) * 9;
+    // Add outside markers - using actual click position
+    outsideShots.forEach(event => {
+        const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
         const marker = document.createElement('div');
         marker.className = 'shot-marker outside';
-        marker.style.left = `${leftPosition}%`;
-        marker.style.top = '12px';
+        marker.style.left = `${event.x}%`;
+        marker.style.top = `${event.y}%`;
         marker.style.position = 'absolute';
-        marker.textContent = '⚽';
+        marker.textContent = playerNumber;
         marker.title = `${event.result} utenfor - ${event.timestamp}`;
         goalContainer.appendChild(marker);
     });
