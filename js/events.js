@@ -43,6 +43,7 @@ import {
     viewCompletedMatch
 } from './utils.js';
 import { renderStatistics } from './ui/match.js';
+import { exportDebugLogs } from './debug-logger.js';
 
 // Lightweight function for modal buttons only - prevents re-attaching all listeners
 export function attachModalEventListeners() {
@@ -158,6 +159,9 @@ export function setupGlobalEventListeners(render) {
                 break;
             case 'exportData':
                 exportData();
+                break;
+            case 'exportDebugLogs':
+                exportDebugLogs();
                 break;
             case 'loadPlayersFile':
                 loadPlayersFromFile();

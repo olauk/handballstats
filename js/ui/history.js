@@ -16,9 +16,13 @@ export function renderHistoryPage() {
                     <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81;">
                         Tidligere kamper
                     </h1>
-                    <div style="display: flex; gap: 0.5rem;">
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                         <button class="btn btn-blue" data-action="backToSetup">
                             ← Tilbake til oppsett
+                        </button>
+                        <button class="btn btn-warning" data-action="exportDebugLogs"
+                                style="background: #f59e0b; color: white;">
+                            📥 Eksporter logger
                         </button>
                         <button class="btn btn-secondary" data-action="logout">
                             Logg ut
