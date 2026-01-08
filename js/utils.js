@@ -4,6 +4,7 @@
 import { APP, PERFORMANCE } from './state.js';
 import { saveToLocalStorageImmediate } from './storage.js';
 import { saveCompletedMatchToFirestore, deleteCompletedMatchFromFirestore } from './firestore-storage.js';
+import { logAppEvent } from './debug-logger.js';
 
 export function loadPlayersFromFile() {
     const fileInput = document.getElementById('playersFileInput');
@@ -141,6 +142,18 @@ export async function finishMatch() {
     };
 
     APP.completedMatches.push(matchData);
+
+    // Log match completion for debugging
+    logAppEvent('match_finished', {
+        matchId: matchData.id,
+        homeTeam: matchData.homeTeam,
+        awayTeam: matchData.awayTeam,
+        totalEvents: matchData.events.length,
+        finalScore: {
+            home: matchData.events.filter(e => e.mode === 'attack' && e.result === 'mål').length,
+            away: matchData.events.filter(e => e.mode === 'defense' && e.result === 'mål').length
+        }
+    });
 
     // Save to both localStorage and Firestore
     saveToLocalStorageImmediate();

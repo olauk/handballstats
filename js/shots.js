@@ -3,6 +3,7 @@
 // ============================================
 import { APP, PERFORMANCE } from './state.js';
 import { saveToLocalStorage } from './storage.js';
+import { logShotEvent, logAppEvent } from './debug-logger.js';
 
 export function handleGoalClick(e) {
     // Validate keeper selection if in defense mode
@@ -169,6 +170,16 @@ export function registerShot(playerId, closeModal, updateGoalVisualization, upda
     // Invalider statistikk-cache siden vi har lagt til et nytt event
     PERFORMANCE.invalidateStatsCache();
 
+    // Log event for debugging
+    logShotEvent({
+        eventType: event.result === 'mål' ? 'goal' : event.result === 'redning' ? 'save' : 'miss',
+        player: player,
+        keeper: event.keeper,
+        result: event.result,
+        position: { x: event.x, y: event.y, zone: event.zone },
+        half: event.half
+    });
+
     closeModal('shotPopup');
     saveToLocalStorage();
 
@@ -214,15 +225,15 @@ export function updateGoalVisualization() {
         goalArea.appendChild(marker);
     });
 
-    // Add outside markers
-    outsideShots.forEach((event, index) => {
-        const leftPosition = 10 + (index % 10) * 9;
+    // Add outside markers - using actual click position
+    outsideShots.forEach(event => {
+        const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
         const marker = document.createElement('div');
         marker.className = 'shot-marker outside';
-        marker.style.left = `${leftPosition}%`;
-        marker.style.top = '12px';
+        marker.style.left = `${event.x}%`;
+        marker.style.top = `${event.y}%`;
         marker.style.position = 'absolute';
-        marker.textContent = '⚽';
+        marker.textContent = playerNumber;
         marker.title = `${event.result} utenfor - ${event.timestamp}`;
         goalContainer.appendChild(marker);
     });
@@ -245,6 +256,16 @@ export function registerTechnicalError(playerId, closeModal, updateStatisticsOnl
 
     // Invalider statistikk-cache siden vi har lagt til et nytt event
     PERFORMANCE.invalidateStatsCache();
+
+    // Log event for debugging
+    logShotEvent({
+        eventType: 'technical_error',
+        player: player,
+        keeper: null,
+        result: 'teknisk feil',
+        position: null,
+        half: event.half
+    });
 
     closeModal('technicalPopup');
     saveToLocalStorage();

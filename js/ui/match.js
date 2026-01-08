@@ -111,13 +111,13 @@ export function renderGoalVisualization() {
 
     const outsideShots = APP.events.filter(e =>
         e.mode === APP.mode && (e.player || e.opponent) && e.zone === 'outside'
-    ).map((event, index) => {
-        const leftPosition = 10 + (index % 10) * 9;
+    ).map(event => {
+        const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
         return `
             <div class="shot-marker outside"
-                 style="left: ${leftPosition}%; top: 12px; position: absolute;"
+                 style="left: ${event.x}%; top: ${event.y}%; position: absolute;"
                  title="${event.result} utenfor - ${event.timestamp}">
-                ⚽
+                ${playerNumber}
             </div>
         `;
     }).join('');
@@ -131,7 +131,7 @@ export function renderGoalVisualization() {
 
     const tempOutsideMarker = APP.tempShot && APP.tempShot.zone === 'outside' ? `
         <div class="shot-marker temp"
-             style="left: 50%; top: 12px; margin-left: -16px; position: absolute;">
+             style="left: ${APP.tempShot.x}%; top: ${APP.tempShot.y}%; position: absolute;">
             ⚽
         </div>
     ` : '';
