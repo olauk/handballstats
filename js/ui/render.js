@@ -5,6 +5,7 @@ import { APP } from '../state.js';
 import { renderMatchPage } from './match.js';
 import { renderSetupPage } from './setup.js';
 import { renderHistoryPage, renderViewMatchPage } from './history.js';
+import { renderHomePage } from './home.js';
 
 export function render(attachEventListeners, renderFunction) {
     const app = document.getElementById('app');
@@ -16,6 +17,8 @@ export function render(attachEventListeners, renderFunction) {
     if (APP.page === 'login' || APP.page === 'register' || APP.page === 'reset-password') {
         console.log('→ Showing auth page for:', APP.page); // DEBUG
         app.innerHTML = renderLoginPage();
+    } else if (APP.page === 'home') {
+        app.innerHTML = renderHomePage();
     } else if (APP.page === 'welcome') {
         app.innerHTML = renderWelcomePage();
     } else if (APP.page === 'setup') {
@@ -28,8 +31,8 @@ export function render(attachEventListeners, renderFunction) {
         console.log('→ Showing active match page'); // DEBUG
         app.innerHTML = renderMatchPage();
     } else {
-        console.warn('⚠️ Unknown page:', APP.page, '- defaulting to match page'); // DEBUG
-        app.innerHTML = renderMatchPage();
+        console.warn('⚠️ Unknown page:', APP.page, '- defaulting to home page'); // DEBUG
+        app.innerHTML = renderHomePage();
     }
 
     attachEventListeners(renderFunction);

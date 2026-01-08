@@ -99,6 +99,11 @@ export function setupGlobalEventListeners(render) {
                 saveToLocalStorage();
                 render();
                 break;
+            case 'backToHome':
+                APP.page = 'home';
+                saveToLocalStorage();
+                render();
+                break;
             case 'setHalf':
                 APP.currentHalf = parseInt(button.dataset.half);
                 saveToLocalStorage();
@@ -204,6 +209,16 @@ export function setupGlobalEventListeners(render) {
             case 'showPasswordReset':
                 console.log('🔵 Button clicked: showPasswordReset'); // DEBUG
                 APP.page = 'reset-password';
+                render();
+                break;
+            case 'selectMode':
+                APP.matchMode = button.dataset.mode;
+                saveToLocalStorage();
+                render();
+                break;
+            case 'startWithMode':
+                APP.page = 'setup';
+                saveToLocalStorage();
                 render();
                 break;
         }

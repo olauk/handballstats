@@ -11,7 +11,10 @@ export function renderSetupPage() {
                     <h1 style="font-size: 2.5rem; font-weight: 800; color: #312e81;">
                         Oppsett av kamp
                     </h1>
-                    <div style="display: flex; gap: 0.5rem;">
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn btn-secondary" data-action="backToHome">
+                            ← Tilbake
+                        </button>
                         <button class="btn btn-blue" data-action="viewHistory">
                             📋 Tidligere kamper
                         </button>
