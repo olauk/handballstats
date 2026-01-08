@@ -1,0 +1,10 @@
+- [ ] Feilsøke versjon 1  
+      - [ ] Lagre logg som inneholder data om registrerte mål og redninger, slik at det er mulig å feilsøke eventuelle feil i registrering av mål på spiller. (Kom opp noen småfeil i brukertesting hvor spillere i statistikken ble registrert med mål uten at dette ble gjort av brukeren)  
+- [ ] Utvikle versjon 2  
+      - [ ] Lage to modus \- enkel og avansert  
+      - [ ] Lage en førsteside som brukeren kommer tilbake til dersom oppsett av kamp blir avbrutt, eller når kamper avsluttes.  
+      - [ ] Enkel modus blir som første versjon  
+      - [ ] Avansert modus  
+            - [ ] Legge til tidtaker. Lengden på en omgang skal kunne velges i oppsett av kamp (20, 25 eller 30 minutter) Start av tidtaker gjøres med egen startknapp øverst på siden under, navnet på lagene som spiller. Det må også være en pause knapp som stopper tiden. Når tiden når det som er satt som lengde for omgangen, så stopper den. Når man velger 2\. omgang så startes tidtaker på samme måte som i første omgang. Tiden starter da fra 0\.   
+            - [ ] Registrerte mål, redninger og tekniske feil registreres også med tid i omgangen( fra timeren) for eksempel: så scorer spiller nummer 4 på eget lag mål 4:21 i første omgang. Da skal mål, spiller og tid registreres.  
+            - [ ] Mål, redninger og tekniske feil føres i en liste under målføringsfeltet, med en linje for hver aksjon. På formatet: \[tid\] \[aksjon\] \[spiller\] \[stilling i kampen\] eksempel: 15:21 Mål 4 Aurora Hatling  14-7 
