@@ -32,7 +32,9 @@ export const APP = {
         isRunning: false,
         currentTime: 0, // Time in seconds
         intervalId: null // For setInterval
-    }
+    },
+    // ID generator state - ensures unique IDs across all players and opponents
+    _idCounter: 0 // Internal counter for generating unique IDs
 };
 
 // ============================================
@@ -78,4 +80,43 @@ export function getCurrentOpponents() {
     return APP.page === 'viewMatch' && APP.viewingMatch
         ? APP.viewingMatch.opponents
         : APP.opponents;
+}
+
+// ============================================
+// UNIQUE ID GENERATOR
+// ============================================
+/**
+ * Generates a guaranteed unique ID for players and opponents.
+ * Combines timestamp, counter, and validation to prevent duplicates.
+ *
+ * @returns {number} A unique ID
+ */
+export function generateUniqueId() {
+    // Get all existing IDs from players, opponents, and tempPlayersList
+    const existingIds = new Set([
+        ...APP.players.map(p => p.id),
+        ...APP.opponents.map(p => p.id),
+        ...APP.tempPlayersList.map(p => p.id)
+    ]);
+
+    // Generate ID using timestamp + counter
+    let newId;
+    let attempts = 0;
+    const maxAttempts = 1000;
+
+    do {
+        // Use timestamp + counter for uniqueness
+        newId = Date.now() + APP._idCounter++;
+        attempts++;
+
+        // Safety check to prevent infinite loop
+        if (attempts > maxAttempts) {
+            console.error('⚠️ Failed to generate unique ID after 1000 attempts');
+            // Fallback: use timestamp + large random number
+            newId = Date.now() + Math.floor(Math.random() * 1000000);
+            break;
+        }
+    } while (existingIds.has(newId));
+
+    return newId;
 }
