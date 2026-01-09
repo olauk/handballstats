@@ -184,6 +184,94 @@ export function cancelRosterPlayerEdit(updateModal) {
 }
 
 /**
+ * Trigger file input for roster players
+ */
+export function loadRosterPlayersFile() {
+    const fileInput = document.getElementById('rosterPlayersFileInput');
+    if (fileInput) fileInput.click();
+}
+
+/**
+ * Handle roster players file upload
+ */
+export function handleRosterPlayersFileUpload(event, updateModal) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const content = e.target.result;
+            let players = [];
+
+            if (file.name.endsWith('.json')) {
+                // JSON format: [{id, name, number, isKeeper}, ...]
+                const rawPlayers = JSON.parse(content);
+                // Ensure all players have unique IDs
+                players = rawPlayers.map(p => ({
+                    id: generateUniqueId(), // Always generate new unique ID
+                    name: p.name || 'Ukjent spiller',
+                    number: p.number || 0,
+                    isKeeper: p.isKeeper || false
+                }));
+            } else if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+                // CSV/TXT format: number,name,isKeeper (one per line)
+                const lines = content.split('\n').filter(line => line.trim());
+                players = lines.map((line, index) => {
+                    const [number, name, isKeeper] = line.split(',').map(s => s.trim());
+                    return {
+                        id: generateUniqueId(),
+                        name: name || `Spiller ${index + 1}`,
+                        number: parseInt(number) || index + 1,
+                        isKeeper: isKeeper === 'true' || isKeeper === '1'
+                    };
+                });
+            }
+
+            if (players.length > 0) {
+                // Ask user if they want to replace or merge
+                const hasExistingPlayers = APP.tempPlayersList.length > 0;
+                let shouldReplace = true;
+
+                if (hasExistingPlayers) {
+                    shouldReplace = confirm(
+                        `Du har allerede ${APP.tempPlayersList.length} spiller(e) i listen.\n\n` +
+                        `Trykk OK for å ERSTATTE alle spillere med ${players.length} spillere fra filen.\n` +
+                        `Trykk Avbryt for å LEGGE TIL de ${players.length} spillerne fra filen.`
+                    );
+                }
+
+                if (shouldReplace) {
+                    APP.tempPlayersList = players;
+                } else {
+                    APP.tempPlayersList = [...APP.tempPlayersList, ...players];
+                }
+
+                APP.editingPlayerId = null;
+                updateModal();
+
+                const totalPlayers = APP.tempPlayersList.length;
+                alert(`✓ Lastet inn ${players.length} spiller(e) fra filen.\n\nTotalt ${totalPlayers} spiller(e) i listen.`);
+            } else {
+                alert('Filen inneholder ingen gyldige spillere.');
+            }
+        } catch (error) {
+            console.error('File upload error:', error);
+            alert(
+                'Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\n' +
+                'Format JSON: [{"name":"Navn","number":1,"isKeeper":false}]\n' +
+                'Format CSV/TXT: nummer,navn,isKeeper\n\n' +
+                'Eksempel CSV:\n' +
+                '1,Ola Nordmann,false\n' +
+                '12,Keeper Hansen,true'
+            );
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // Reset input
+}
+
+/**
  * Import team roster to setup (players or opponents)
  */
 export function importTeamRosterToSetup(teamId, target, mergeMode) {

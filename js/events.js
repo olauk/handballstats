@@ -55,7 +55,9 @@ import {
     saveRosterPlayer,
     removePlayerFromRoster,
     cancelRosterPlayerEdit,
-    importTeamRosterToSetup
+    importTeamRosterToSetup,
+    loadRosterPlayersFile,
+    handleRosterPlayersFileUpload
 } from './team-roster.js';
 import { renderStatistics } from './ui/match.js';
 import { exportDebugLogs } from './debug-logger.js';
@@ -362,6 +364,9 @@ export function setupGlobalEventListeners(render) {
             case 'cancelRosterPlayerEdit':
                 cancelRosterPlayerEdit(updateTeamRosterEditModal);
                 break;
+            case 'loadRosterPlayersFile':
+                loadRosterPlayersFile();
+                break;
             case 'toggleImportMenu':
                 showModal('importTeamMenu');
                 break;
@@ -460,6 +465,12 @@ export function attachEventListeners(render) {
     if (opponentsFileInput) {
         opponentsFileInput.addEventListener('change', (e) =>
             handleOpponentsFileUpload(e, updatePlayersManagementModal, showModal));
+    }
+
+    const rosterPlayersFileInput = document.getElementById('rosterPlayersFileInput');
+    if (rosterPlayersFileInput) {
+        rosterPlayersFileInput.addEventListener('change', (e) =>
+            handleRosterPlayersFileUpload(e, updateTeamRosterEditModal));
     }
 
     // Keeper select
