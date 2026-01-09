@@ -23,7 +23,16 @@ export const APP = {
     // Player management popup state
     managingTeam: null, // 'players' or 'opponents'
     tempPlayersList: [], // Temporary list while editing
-    editingPlayerId: null // ID of player being edited
+    editingPlayerId: null, // ID of player being edited
+    // Timer state (advanced mode only)
+    timerConfig: {
+        halfLength: 30 // Half length in minutes: 20, 25, or 30
+    },
+    timerState: {
+        isRunning: false,
+        currentTime: 0, // Time in seconds
+        intervalId: null // For setInterval
+    }
 };
 
 // ============================================
