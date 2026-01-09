@@ -272,6 +272,43 @@ export function setupGlobalEventListeners(render) {
                 resetTimer();
                 render();
                 break;
+            case 'nextHalf':
+                // Only works in advanced mode when currentHalf === 1
+                if (APP.matchMode === 'advanced' && APP.currentHalf === 1) {
+                    const halfLengthSeconds = APP.timerConfig.halfLength * 60;
+                    const currentTime = APP.timerState.currentTime;
+
+                    // Sjekk om timer har nådd valgt lengde
+                    if (currentTime < halfLengthSeconds) {
+                        const minutesRemaining = Math.floor((halfLengthSeconds - currentTime) / 60);
+                        const secondsRemaining = (halfLengthSeconds - currentTime) % 60;
+                        const timeRemaining = `${minutesRemaining}:${String(secondsRemaining).padStart(2, '0')}`;
+
+                        const confirmSwitch = confirm(
+                            `⚠️ Omgangen er ikke ferdig!\n\n` +
+                            `Det er ${timeRemaining} igjen av omgangen.\n\n` +
+                            `Er du sikker på at du vil gå til 2. omgang?`
+                        );
+
+                        if (!confirmSwitch) {
+                            break; // Avbryt bytte av omgang
+                        }
+                    }
+
+                    // Nullstill timer ved bytte til 2. omgang
+                    if (APP.timerState.intervalId) {
+                        clearInterval(APP.timerState.intervalId);
+                        APP.timerState.intervalId = null;
+                    }
+                    APP.timerState.isRunning = false;
+                    APP.timerState.currentTime = 0;
+
+                    // Gå til 2. omgang
+                    APP.currentHalf = 2;
+                    saveToLocalStorage();
+                    render();
+                }
+                break;
         }
     });
 }

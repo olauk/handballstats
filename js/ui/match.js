@@ -18,16 +18,39 @@ export function renderMatchPage() {
 
     return `
         <div class="container">
-            <div class="card">
-                <div class="flex flex-between flex-wrap mb-4" style="gap: 1rem; align-items: center;">
-                    <div class="flex" style="gap: 1rem; align-items: center;">
-                        <button class="btn btn-secondary" data-action="backToSetup">
-                            ← Tilbake til oppsett
-                        </button>
+            ${APP.matchMode === 'advanced' ? `
+                <!-- Advanced mode: Timer with team/score -->
+                <div class="card">
+                    ${renderTimerControls()}
+                </div>
+            ` : `
+                <!-- Simple mode: Traditional layout with team/score and half buttons -->
+                <div class="card">
+                    <div class="flex flex-between flex-wrap mb-4" style="gap: 1rem; align-items: center;">
                         <h1 style="font-size: 1.75rem; font-weight: 800; color: #312e81; margin: 0;">
                             ${APP.homeTeam} <span style="color: #3b82f6;">${homeGoals}</span> - <span style="color: #f97316;">${awayGoals}</span> ${APP.awayTeam}
                         </h1>
                     </div>
+
+                    <div class="flex flex-gap mb-4">
+                        <button class="btn ${APP.currentHalf === 1 ? 'btn-primary' : 'btn-secondary'}"
+                                data-action="setHalf" data-half="1">
+                            1. omgang
+                        </button>
+                        <button class="btn ${APP.currentHalf === 2 ? 'btn-primary' : 'btn-secondary'}"
+                                data-action="setHalf" data-half="2">
+                            2. omgang
+                        </button>
+                    </div>
+                </div>
+            `}
+
+            <!-- Action buttons (same for both modes) -->
+            <div class="card">
+                <div class="flex flex-between flex-wrap" style="gap: 0.5rem;">
+                    <button class="btn btn-secondary" data-action="backToSetup">
+                        ← Tilbake til oppsett
+                    </button>
                     <div class="flex" style="gap: 0.5rem; flex-wrap: wrap;">
                         <button class="btn btn-warning" data-action="finishMatch">
                             ✅ Avslutt kamp
@@ -43,24 +66,7 @@ export function renderMatchPage() {
                         </button>
                     </div>
                 </div>
-
-                <div class="flex flex-gap mb-4">
-                    <button class="btn ${APP.currentHalf === 1 ? 'btn-primary' : 'btn-secondary'}"
-                            data-action="setHalf" data-half="1">
-                        1. omgang
-                    </button>
-                    <button class="btn ${APP.currentHalf === 2 ? 'btn-primary' : 'btn-secondary'}"
-                            data-action="setHalf" data-half="2">
-                        2. omgang
-                    </button>
-                </div>
             </div>
-
-            ${APP.matchMode === 'advanced' ? `
-                <div class="card">
-                    ${renderTimerControls()}
-                </div>
-            ` : ''}
 
             <div class="card">
                 <div class="flex flex-gap mb-4">

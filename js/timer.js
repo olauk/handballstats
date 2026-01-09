@@ -123,8 +123,27 @@ export function renderTimerControls() {
     const formattedTime = formatTime(APP.timerState.currentTime);
     const halfLength = APP.timerConfig.halfLength;
 
+    // Get current score for display
+    const events = APP.events;
+    const homeGoals = events.filter(e => e.mode === 'attack' && e.result === 'mål').length;
+    const awayGoals = events.filter(e => e.mode === 'defense' && e.result === 'mål').length;
+
     return `
-        <div class="timer-container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div class="timer-container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <!-- Team names and score - centered above timer -->
+            <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                <div style="color: white; font-size: 1.25rem; font-weight: 700;">
+                    ${APP.homeTeam}
+                </div>
+                <div style="color: white; font-size: 2rem; font-weight: 800; font-family: 'Courier New', monospace;">
+                    ${homeGoals} - ${awayGoals}
+                </div>
+                <div style="color: white; font-size: 1.25rem; font-weight: 700;">
+                    ${APP.awayTeam}
+                </div>
+            </div>
+
+            <!-- Current half and length info -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <div style="color: white; font-size: 0.875rem; font-weight: 600;">
                     ${APP.currentHalf}. OMGANG
@@ -134,10 +153,12 @@ export function renderTimerControls() {
                 </div>
             </div>
 
+            <!-- Timer display -->
             <div id="timerDisplay" style="font-size: 4rem; font-weight: 800; color: white; font-family: 'Courier New', monospace; letter-spacing: 0.1em; margin-bottom: 1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                 ${formattedTime}
             </div>
 
+            <!-- Timer controls -->
             <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
                 ${isRunning ? `
                     <button class="btn"
@@ -158,6 +179,14 @@ export function renderTimerControls() {
                         style="background: rgba(255, 255, 255, 0.2); color: white; font-weight: 700; padding: 0.75rem 1.5rem; border: 2px solid rgba(255, 255, 255, 0.5);">
                     🔄 Nullstill
                 </button>
+
+                ${APP.currentHalf === 1 ? `
+                    <button class="btn"
+                            data-action="nextHalf"
+                            style="background: #3b82f6; color: white; font-weight: 700; padding: 0.75rem 1.5rem; border: none;">
+                        ⏭️ Ny omgang
+                    </button>
+                ` : ''}
             </div>
         </div>
     `;
