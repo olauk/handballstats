@@ -4,6 +4,7 @@
 import { APP, PERFORMANCE } from './state.js';
 import { saveToLocalStorage } from './storage.js';
 import { logShotEvent, logAppEvent } from './debug-logger.js';
+import { getCurrentTimerTime } from './timer.js';
 
 export function handleGoalClick(e) {
     // Validate keeper selection if in defense mode
@@ -163,6 +164,15 @@ export function registerShot(playerId, closeModal, updateGoalVisualization, upda
         timestamp: new Date().toLocaleTimeString('no-NO')
     };
 
+    // Add timer timestamp in advanced mode
+    if (APP.matchMode === 'advanced') {
+        const timerTime = getCurrentTimerTime();
+        event.timerTimestamp = {
+            minutes: timerTime.minutes,
+            seconds: timerTime.seconds
+        };
+    }
+
     APP.events.push(event);
     APP.tempShot = null;
     APP.selectedResult = null;
@@ -221,7 +231,17 @@ export function updateGoalVisualization() {
         marker.style.left = `${event.x}%`;
         marker.style.top = `${event.y}%`;
         marker.textContent = playerNumber;
-        marker.title = `${event.result} - ${event.timestamp}`;
+
+        // Include timer timestamp if available (advanced mode)
+        let title = event.result;
+        if (event.timerTimestamp) {
+            const min = String(event.timerTimestamp.minutes).padStart(2, '0');
+            const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
+            title = `[${min}:${sec}] ${title}`;
+        }
+        title += ` - ${event.timestamp}`;
+        marker.title = title;
+
         goalArea.appendChild(marker);
     });
 
@@ -234,7 +254,17 @@ export function updateGoalVisualization() {
         marker.style.top = `${event.y}%`;
         marker.style.position = 'absolute';
         marker.textContent = playerNumber;
-        marker.title = `${event.result} utenfor - ${event.timestamp}`;
+
+        // Include timer timestamp if available (advanced mode)
+        let title = event.result + ' utenfor';
+        if (event.timerTimestamp) {
+            const min = String(event.timerTimestamp.minutes).padStart(2, '0');
+            const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
+            title = `[${min}:${sec}] ${title}`;
+        }
+        title += ` - ${event.timestamp}`;
+        marker.title = title;
+
         goalContainer.appendChild(marker);
     });
 }
@@ -251,6 +281,15 @@ export function registerTechnicalError(playerId, closeModal, updateStatisticsOnl
         result: 'teknisk feil',
         timestamp: new Date().toLocaleTimeString('no-NO')
     };
+
+    // Add timer timestamp in advanced mode
+    if (APP.matchMode === 'advanced') {
+        const timerTime = getCurrentTimerTime();
+        event.timerTimestamp = {
+            minutes: timerTime.minutes,
+            seconds: timerTime.seconds
+        };
+    }
 
     APP.events.push(event);
 

@@ -109,10 +109,20 @@ export function renderGoalVisualization() {
     ).map(event => {
         const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
         const className = event.result === 'mål' ? 'goal' : 'save';
+
+        // Include timer timestamp if available (advanced mode)
+        let title = event.result;
+        if (event.timerTimestamp) {
+            const min = String(event.timerTimestamp.minutes).padStart(2, '0');
+            const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
+            title = `[${min}:${sec}] ${title}`;
+        }
+        title += ` - ${event.timestamp}`;
+
         return `
             <div class="shot-marker ${className}"
                  style="left: ${event.x}%; top: ${event.y}%;"
-                 title="${event.result} - ${event.timestamp}">
+                 title="${title}">
                 ${playerNumber}
             </div>
         `;
@@ -122,10 +132,20 @@ export function renderGoalVisualization() {
         e.mode === APP.mode && (e.player || e.opponent) && e.zone === 'outside'
     ).map(event => {
         const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
+
+        // Include timer timestamp if available (advanced mode)
+        let title = event.result + ' utenfor';
+        if (event.timerTimestamp) {
+            const min = String(event.timerTimestamp.minutes).padStart(2, '0');
+            const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
+            title = `[${min}:${sec}] ${title}`;
+        }
+        title += ` - ${event.timestamp}`;
+
         return `
             <div class="shot-marker outside"
                  style="left: ${event.x}%; top: ${event.y}%; position: absolute;"
-                 title="${event.result} utenfor - ${event.timestamp}">
+                 title="${title}">
                 ${playerNumber}
             </div>
         `;
