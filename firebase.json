@@ -12,12 +12,6 @@
       "DEPLOY.md",
       "SECURITY.md"
     ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
     "headers": [
       {
         "source": "**/*.@(js|css)",
