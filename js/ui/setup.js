@@ -43,6 +43,48 @@ export function renderSetupPage() {
                            style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;">
                 </div>
 
+                ${APP.matchMode === 'advanced' ? `
+                    <div class="mb-6" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 12px;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                            <h2 style="font-size: 1.5rem; font-weight: 700; color: white; margin: 0;">
+                                ⏱️ Tidtaker-innstillinger
+                            </h2>
+                            <span style="background: rgba(255, 255, 255, 0.2); color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
+                                AVANSERT
+                            </span>
+                        </div>
+                        <p style="color: rgba(255, 255, 255, 0.9); margin-bottom: 1.5rem; font-size: 0.875rem;">
+                            Velg lengde på hver omgang. Tidtakeren starter ikke automatisk - du må starte den manuelt når kampen begynner.
+                        </p>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: white;">
+                            Omgangslengde
+                        </label>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+                            <button type="button"
+                                    class="btn ${APP.timerConfig.halfLength === 20 ? 'btn-primary' : ''}"
+                                    data-action="setHalfLength"
+                                    data-length="20"
+                                    style="padding: 1rem; font-size: 1.25rem; font-weight: 700; background: ${APP.timerConfig.halfLength === 20 ? '#3b82f6' : 'white'}; color: ${APP.timerConfig.halfLength === 20 ? 'white' : '#312e81'}; border: 3px solid ${APP.timerConfig.halfLength === 20 ? '#3b82f6' : '#e5e7eb'};">
+                                20 min
+                            </button>
+                            <button type="button"
+                                    class="btn ${APP.timerConfig.halfLength === 25 ? 'btn-primary' : ''}"
+                                    data-action="setHalfLength"
+                                    data-length="25"
+                                    style="padding: 1rem; font-size: 1.25rem; font-weight: 700; background: ${APP.timerConfig.halfLength === 25 ? '#3b82f6' : 'white'}; color: ${APP.timerConfig.halfLength === 25 ? 'white' : '#312e81'}; border: 3px solid ${APP.timerConfig.halfLength === 25 ? '#3b82f6' : '#e5e7eb'};">
+                                25 min
+                            </button>
+                            <button type="button"
+                                    class="btn ${APP.timerConfig.halfLength === 30 ? 'btn-primary' : ''}"
+                                    data-action="setHalfLength"
+                                    data-length="30"
+                                    style="padding: 1rem; font-size: 1.25rem; font-weight: 700; background: ${APP.timerConfig.halfLength === 30 ? '#3b82f6' : 'white'}; color: ${APP.timerConfig.halfLength === 30 ? 'white' : '#312e81'}; border: 3px solid ${APP.timerConfig.halfLength === 30 ? '#3b82f6' : '#e5e7eb'};">
+                                30 min
+                            </button>
+                        </div>
+                    </div>
+                ` : ''}
+
                 <div class="mb-6">
                     <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
                         ${APP.homeTeam} - Spillere

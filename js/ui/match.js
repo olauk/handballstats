@@ -3,6 +3,7 @@
 // ============================================
 import { APP, getCurrentPlayers, getCurrentOpponents, getCurrentEvents } from '../state.js';
 import { getTeamGoals, getPlayerStats, getOpponentStats } from '../statistics.js';
+import { renderTimerControls } from '../timer.js';
 
 export function renderMatchPage() {
     const keeperOptions = APP.players.filter(p => p.isKeeper).map(k =>
@@ -52,7 +53,15 @@ export function renderMatchPage() {
                         2. omgang
                     </button>
                 </div>
+            </div>
 
+            ${APP.matchMode === 'advanced' ? `
+                <div class="card">
+                    ${renderTimerControls()}
+                </div>
+            ` : ''}
+
+            <div class="card">
                 <div class="flex flex-gap mb-4">
                     <button class="btn ${APP.mode === 'attack' ? 'btn-blue' : 'btn-secondary'}"
                             data-action="setMode" data-mode="attack" style="flex: 1;">

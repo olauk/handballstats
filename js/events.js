@@ -44,6 +44,7 @@ import {
 } from './utils.js';
 import { renderStatistics } from './ui/match.js';
 import { exportDebugLogs } from './debug-logger.js';
+import { startTimer, pauseTimer, resetTimer } from './timer.js';
 
 // Lightweight function for modal buttons only - prevents re-attaching all listeners
 export function attachModalEventListeners() {
@@ -219,6 +220,23 @@ export function setupGlobalEventListeners(render) {
             case 'startWithMode':
                 APP.page = 'setup';
                 saveToLocalStorage();
+                render();
+                break;
+            case 'setHalfLength':
+                APP.timerConfig.halfLength = parseInt(button.dataset.length);
+                saveToLocalStorage();
+                render();
+                break;
+            case 'startTimer':
+                startTimer();
+                render();
+                break;
+            case 'pauseTimer':
+                pauseTimer();
+                render();
+                break;
+            case 'resetTimer':
+                resetTimer();
                 render();
                 break;
         }
