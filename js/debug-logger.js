@@ -3,7 +3,7 @@
  * Stores comprehensive logs in Firestore for troubleshooting and analysis
  */
 
-import { auth, db } from './firebase-init.js';
+import { auth, db } from './firebase-config.js';
 import { APP } from './state.js';
 
 /**
