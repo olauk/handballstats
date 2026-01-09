@@ -18,6 +18,29 @@ export function renderMatchPage() {
 
     return `
         <div class="container">
+            <!-- Action buttons at the top -->
+            <div class="card">
+                <div class="flex flex-between flex-wrap" style="gap: 0.5rem;">
+                    <button class="btn btn-secondary" data-action="backToSetup" style="padding: 0.5rem 1rem;">
+                        ← Tilbake til oppsett
+                    </button>
+                    <div class="flex" style="gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn btn-warning" data-action="finishMatch" style="padding: 0.5rem 1rem;">
+                            ✅ Avslutt kamp
+                        </button>
+                        <button class="btn btn-success" data-action="exportData" style="padding: 0.5rem 1rem;">
+                            💾 Eksporter
+                        </button>
+                        <button class="btn btn-danger" data-action="resetMatch" style="padding: 0.5rem 1rem;">
+                            🔄 Nullstill
+                        </button>
+                        <button class="btn btn-secondary" data-action="logout" style="padding: 0.5rem 1rem;">
+                            Logg ut
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             ${APP.matchMode === 'advanced' ? `
                 <!-- Advanced mode: Timer with team/score -->
                 <div class="card">
@@ -34,48 +57,25 @@ export function renderMatchPage() {
 
                     <div class="flex flex-gap mb-4">
                         <button class="btn ${APP.currentHalf === 1 ? 'btn-primary' : 'btn-secondary'}"
-                                data-action="setHalf" data-half="1">
+                                data-action="setHalf" data-half="1" style="padding: 0.5rem 1rem;">
                             1. omgang
                         </button>
                         <button class="btn ${APP.currentHalf === 2 ? 'btn-primary' : 'btn-secondary'}"
-                                data-action="setHalf" data-half="2">
+                                data-action="setHalf" data-half="2" style="padding: 0.5rem 1rem;">
                             2. omgang
                         </button>
                     </div>
                 </div>
             `}
 
-            <!-- Action buttons (same for both modes) -->
-            <div class="card">
-                <div class="flex flex-between flex-wrap" style="gap: 0.5rem;">
-                    <button class="btn btn-secondary" data-action="backToSetup">
-                        ← Tilbake til oppsett
-                    </button>
-                    <div class="flex" style="gap: 0.5rem; flex-wrap: wrap;">
-                        <button class="btn btn-warning" data-action="finishMatch">
-                            ✅ Avslutt kamp
-                        </button>
-                        <button class="btn btn-success" data-action="exportData">
-                            💾 Eksporter
-                        </button>
-                        <button class="btn btn-danger" data-action="resetMatch">
-                            🔄 Nullstill
-                        </button>
-                        <button class="btn btn-secondary" data-action="logout">
-                            Logg ut
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <div class="card">
                 <div class="flex flex-gap mb-4">
                     <button class="btn ${APP.mode === 'attack' ? 'btn-blue' : 'btn-secondary'}"
-                            data-action="setMode" data-mode="attack" style="flex: 1;">
+                            data-action="setMode" data-mode="attack" style="flex: 1; padding: 0.5rem 1rem;">
                         Angrep (${APP.homeTeam})
                     </button>
                     <button class="btn ${APP.mode === 'defense' ? 'btn-orange' : 'btn-secondary'}"
-                            data-action="setMode" data-mode="defense" style="flex: 1;">
+                            data-action="setMode" data-mode="defense" style="flex: 1; padding: 0.5rem 1rem;">
                         Forsvar (Keeper mot ${APP.awayTeam})
                     </button>
                 </div>
@@ -94,7 +94,7 @@ export function renderMatchPage() {
 
                 ${APP.mode === 'attack' ? `
                     <button class="btn btn-warning" data-action="showTechnicalPopup"
-                            style="width: 100%; font-size: 1.125rem;">
+                            style="width: 100%; padding: 0.5rem 1rem;">
                         Registrer teknisk feil
                     </button>
                 ` : ''}

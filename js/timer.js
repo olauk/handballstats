@@ -132,13 +132,13 @@ export function renderTimerControls() {
         <div class="timer-container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
             <!-- Team names and score - centered above timer -->
             <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
-                <div style="color: white; font-size: 1.25rem; font-weight: 700;">
+                <div style="color: white; font-size: 1.5rem; font-weight: 700;">
                     ${APP.homeTeam}
                 </div>
-                <div style="color: white; font-size: 2rem; font-weight: 800; font-family: 'Courier New', monospace;">
+                <div style="color: white; font-size: 1.5rem; font-weight: 800; font-family: 'Courier New', monospace;">
                     ${homeGoals} - ${awayGoals}
                 </div>
-                <div style="color: white; font-size: 1.25rem; font-weight: 700;">
+                <div style="color: white; font-size: 1.5rem; font-weight: 700;">
                     ${APP.awayTeam}
                 </div>
             </div>
@@ -163,27 +163,27 @@ export function renderTimerControls() {
                 ${isRunning ? `
                     <button class="btn"
                             data-action="pauseTimer"
-                            style="background: #fbbf24; color: #78350f; font-weight: 700; padding: 0.75rem 1.5rem; border: none;">
+                            style="background: #fbbf24; color: #78350f; font-weight: 700; padding: 0.5rem 1rem; border: none;">
                         ⏸️ Pause
                     </button>
                 ` : `
                     <button class="btn"
                             data-action="startTimer"
-                            style="background: #10b981; color: white; font-weight: 700; padding: 0.75rem 1.5rem; border: none;">
+                            style="background: #10b981; color: white; font-weight: 700; padding: 0.5rem 1rem; border: none;">
                         ▶️ ${APP.timerState.currentTime > 0 ? 'Fortsett' : 'Start'}
                     </button>
                 `}
 
                 <button class="btn"
                         data-action="resetTimer"
-                        style="background: rgba(255, 255, 255, 0.2); color: white; font-weight: 700; padding: 0.75rem 1.5rem; border: 2px solid rgba(255, 255, 255, 0.5);">
+                        style="background: rgba(255, 255, 255, 0.2); color: white; font-weight: 700; padding: 0.5rem 1rem; border: 2px solid rgba(255, 255, 255, 0.5);">
                     🔄 Nullstill
                 </button>
 
                 ${APP.currentHalf === 1 ? `
                     <button class="btn"
                             data-action="nextHalf"
-                            style="background: #3b82f6; color: white; font-weight: 700; padding: 0.75rem 1.5rem; border: none;">
+                            style="background: #3b82f6; color: white; font-weight: 700; padding: 0.5rem 1rem; border: none;">
                         ⏭️ Ny omgang
                     </button>
                 ` : ''}
