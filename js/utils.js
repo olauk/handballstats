@@ -221,6 +221,17 @@ export function resetMatch() {
         APP.events = [];
         APP.currentHalf = 1;
 
+        // Nullstill timer (kun i avansert modus)
+        if (APP.matchMode === 'advanced') {
+            // Stopp timer hvis den kjører
+            if (APP.timerState.intervalId) {
+                clearInterval(APP.timerState.intervalId);
+                APP.timerState.intervalId = null;
+            }
+            APP.timerState.isRunning = false;
+            APP.timerState.currentTime = 0;
+        }
+
         // Invalider cache siden alle events er slettet
         PERFORMANCE.invalidateStatsCache();
 

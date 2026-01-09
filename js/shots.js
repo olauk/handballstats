@@ -168,9 +168,18 @@ export function registerShot(playerId, closeModal, updateGoalVisualization, upda
     // Add timer timestamp in advanced mode
     if (APP.matchMode === 'advanced') {
         const timerTime = getCurrentTimerTime();
+
+        // Beregn total kamptid (legg til 1. omgangs lengde for 2. omgang)
+        let totalMinutes = timerTime.minutes;
+        let totalSeconds = timerTime.seconds;
+
+        if (APP.currentHalf === 2) {
+            totalMinutes += APP.timerConfig.halfLength;
+        }
+
         event.timerTimestamp = {
-            minutes: timerTime.minutes,
-            seconds: timerTime.seconds
+            minutes: totalMinutes,
+            seconds: totalSeconds
         };
     }
 
@@ -290,9 +299,18 @@ export function registerTechnicalError(playerId, closeModal, updateStatisticsOnl
     // Add timer timestamp in advanced mode
     if (APP.matchMode === 'advanced') {
         const timerTime = getCurrentTimerTime();
+
+        // Beregn total kamptid (legg til 1. omgangs lengde for 2. omgang)
+        let totalMinutes = timerTime.minutes;
+        let totalSeconds = timerTime.seconds;
+
+        if (APP.currentHalf === 2) {
+            totalMinutes += APP.timerConfig.halfLength;
+        }
+
         event.timerTimestamp = {
-            minutes: timerTime.minutes,
-            seconds: timerTime.seconds
+            minutes: totalMinutes,
+            seconds: totalSeconds
         };
     }
 
