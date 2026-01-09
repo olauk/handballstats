@@ -30,9 +30,9 @@ export function showPlayerShotDetails(playerId, isOpponent = false) {
     const events = getCurrentEvents();
     const playerShots = events.filter(e => {
         if (isOpponent) {
-            return e.opponent?.id === playerId && e.zone === 'goal';
+            return e.opponent?.id === playerId && e.mode === 'defense';
         } else {
-            return e.player?.id === playerId && e.zone === 'goal';
+            return e.player?.id === playerId && e.mode === 'attack';
         }
     });
 
@@ -55,7 +55,7 @@ export function showKeeperShotDetails(keeperId) {
 
     const events = getCurrentEvents();
     const keeperShots = events.filter(e =>
-        e.keeper?.id === keeperId && e.zone === 'goal'
+        e.keeper?.id === keeperId && e.mode === 'defense'
     );
 
     APP.shotDetailsData = {
@@ -96,14 +96,30 @@ export function renderShotDetailsPopupContent() {
     const { player, shots, isOpponent, isKeeper } = APP.shotDetailsData;
     const goals = shots.filter(s => s.result === 'mål').length;
     const saves = shots.filter(s => s.result === 'redning').length;
+    const outside = shots.filter(s => s.result === 'utenfor').length;
     const shootingPercent = shots.length > 0 ? ((goals / shots.length) * 100).toFixed(1) : 0;
 
-    const shotMarkers = shots.map(shot => {
+    // Separate shots by zone for rendering
+    const goalShots = shots.filter(s => s.zone === 'goal');
+    const outsideShots = shots.filter(s => s.zone === 'outside');
+
+    const goalShotMarkers = goalShots.map(shot => {
         const playerNumber = isKeeper ? shot.opponent?.number : isOpponent ? shot.opponent?.number : shot.player?.number;
         const className = shot.result === 'mål' ? 'goal' : 'save';
         return `
             <div class="shot-marker ${className}"
                  style="left: ${shot.x}%; top: ${shot.y}%;"
+                 title="${shot.result} - ${shot.timestamp}">
+                ${playerNumber}
+            </div>
+        `;
+    }).join('');
+
+    const outsideShotMarkers = outsideShots.map(shot => {
+        const playerNumber = isKeeper ? shot.opponent?.number : isOpponent ? shot.opponent?.number : shot.player?.number;
+        return `
+            <div class="shot-marker outside"
+                 style="left: ${shot.x}%; top: ${shot.y}%; position: absolute;"
                  title="${shot.result} - ${shot.timestamp}">
                 ${playerNumber}
             </div>
@@ -134,6 +150,10 @@ export function renderShotDetailsPopupContent() {
                     <div class="stat-value amber">${saves}</div>
                     <div class="stat-label">Redninger</div>
                 </div>
+                <div class="stat-card gray">
+                    <div class="stat-value gray">${outside}</div>
+                    <div class="stat-label">Utenfor</div>
+                </div>
                 <div class="stat-card blue">
                     <div class="stat-value blue">${shots.length}</div>
                     <div class="stat-label">Totalt skudd</div>
@@ -144,12 +164,13 @@ export function renderShotDetailsPopupContent() {
                 </div>
             </div>
 
-            <div class="goal-container" style="padding-top: 3rem; padding-left: 3rem; padding-right: 3rem; cursor: default;">
+            <div class="goal-container" style="padding-top: 3rem; padding-left: 3rem; padding-right: 3rem; cursor: default; position: relative;">
+                ${outsideShotMarkers}
                 <div class="goal" style="cursor: default;">
                     <div class="goal-grid">
                         ${[...Array(6)].map(() => '<div class="goal-grid-cell"></div>').join('')}
                     </div>
-                    ${shotMarkers}
+                    ${goalShotMarkers}
                 </div>
             </div>
 
@@ -161,6 +182,10 @@ export function renderShotDetailsPopupContent() {
                 <div class="legend-item">
                     <div class="legend-color amber"></div>
                     <span style="font-weight: 500;">Redning</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color gray"></div>
+                    <span style="font-weight: 500;">Utenfor</span>
                 </div>
             </div>
         `}
