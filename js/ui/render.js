@@ -6,6 +6,7 @@ import { renderMatchPage } from './match.js';
 import { renderSetupPage } from './setup.js';
 import { renderHistoryPage, renderViewMatchPage } from './history.js';
 import { renderHomePage } from './home.js';
+import { renderTeamRosterPage } from './team-roster.js';
 
 export function render(attachEventListeners, renderFunction) {
     const app = document.getElementById('app');
@@ -30,6 +31,8 @@ export function render(attachEventListeners, renderFunction) {
     } else if (APP.page === 'match') {
         console.log('→ Showing active match page'); // DEBUG
         app.innerHTML = renderMatchPage();
+    } else if (APP.page === 'teamRoster') {
+        app.innerHTML = renderTeamRosterPage();
     } else {
         console.warn('⚠️ Unknown page:', APP.page, '- defaulting to home page'); // DEBUG
         app.innerHTML = renderHomePage();
