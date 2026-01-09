@@ -62,9 +62,7 @@ export async function logShotEvent(eventData) {
                 homeTeam: APP.homeTeam,
                 awayTeam: APP.awayTeam,
                 mode: APP.mode,
-                half: APP.half,
-                homeScore: APP.homeScore,
-                awayScore: APP.awayScore,
+                half: APP.currentHalf,
                 totalEvents: APP.events.length
             },
 
