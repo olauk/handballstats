@@ -12,13 +12,16 @@ export function renderSetupPage() {
                         Oppsett av kamp
                     </h1>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <button class="btn btn-secondary" data-action="backToHome">
+                        <button class="btn btn-secondary" data-action="backToHome" style="padding: 0.5rem 1rem;">
                             ← Tilbake
                         </button>
-                        <button class="btn btn-blue" data-action="viewHistory">
+                        <button class="btn btn-blue" data-action="viewHistory" style="padding: 0.5rem 1rem;">
                             📋 Tidligere kamper
                         </button>
-                        <button class="btn btn-secondary" data-action="logout">
+                        <button class="btn btn-danger" data-action="resetSetup" style="padding: 0.5rem 1rem;">
+                            🗑️ Nullstill oppsett
+                        </button>
+                        <button class="btn btn-secondary" data-action="logout" style="padding: 0.5rem 1rem;">
                             Logg ut
                         </button>
                     </div>

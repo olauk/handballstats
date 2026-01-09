@@ -37,6 +37,7 @@ import {
     handlePlayersFileUpload,
     handleOpponentsFileUpload,
     resetMatch,
+    resetSetup,
     exportData,
     finishMatch,
     deleteCompletedMatch,
@@ -195,6 +196,9 @@ export function setupGlobalEventListeners(render) {
                 break;
             case 'resetMatch':
                 if (resetMatch()) render();
+                break;
+            case 'resetSetup':
+                if (resetSetup()) render();
                 break;
             case 'exportData':
                 exportData();
