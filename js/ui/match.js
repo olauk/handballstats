@@ -69,7 +69,7 @@ export function renderMatchPage() {
             `}
 
             <div class="card">
-                <div class="flex flex-gap mb-4">
+                <div class="flex flex-gap" style="align-items: center;">
                     <button class="btn ${APP.mode === 'attack' ? 'btn-blue' : 'btn-secondary'}"
                             data-action="setMode" data-mode="attack" style="flex: 1; padding: 0.5rem 1rem;">
                         Angrep (${APP.homeTeam})
@@ -78,26 +78,21 @@ export function renderMatchPage() {
                             data-action="setMode" data-mode="defense" style="flex: 1; padding: 0.5rem 1rem;">
                         Forsvar (Keeper mot ${APP.awayTeam})
                     </button>
-                </div>
 
-                ${APP.mode === 'defense' ? `
-                    <div class="mb-4">
-                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">
-                            Velg aktiv keeper:
-                        </label>
-                        <select id="keeperSelect">
+                    ${APP.mode === 'defense' ? `
+                        <select id="keeperSelect" style="flex: 1;">
                             <option value="">Ingen keeper valgt</option>
                             ${keeperOptions}
                         </select>
-                    </div>
-                ` : ''}
+                    ` : ''}
 
-                ${APP.mode === 'attack' ? `
-                    <button class="btn btn-warning" data-action="showTechnicalPopup"
-                            style="width: 100%; padding: 0.5rem 1rem;">
-                        Registrer teknisk feil
-                    </button>
-                ` : ''}
+                    ${APP.mode === 'attack' ? `
+                        <button class="btn btn-warning" data-action="showTechnicalPopup"
+                                style="flex: 1; padding: 0.5rem 1rem;">
+                            Registrer teknisk feil
+                        </button>
+                    ` : ''}
+                </div>
             </div>
 
             ${renderGoalVisualization()}
