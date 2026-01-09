@@ -140,7 +140,7 @@ function formatEventItem(event, homeScore, awayScore) {
                     ${scoreDisplay}
                 </div>
                 <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
-                    ${teamLabel} • ${event.half}. omgang • ${event.timestamp}
+                    ${teamLabel} • ${event.half}. omgang
                 </div>
             </div>
         </div>
