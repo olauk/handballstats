@@ -196,9 +196,15 @@ export function renderTeamRosterEditModalContent() {
                     </div>
                 </div>
             ` : `
-                <button class="btn btn-primary" data-action="addPlayerToRoster" style="width: 100%;">
-                    + Legg til spiller
-                </button>
+                <div class="grid-2" style="gap: 0.5rem;">
+                    <button class="btn btn-primary" data-action="addPlayerToRoster" style="width: 100%;">
+                        + Legg til spiller
+                    </button>
+                    <button class="btn btn-secondary" data-action="loadRosterPlayersFile" style="width: 100%;">
+                        📁 Last fra fil
+                    </button>
+                </div>
+                <input type="file" id="rosterPlayersFileInput" accept=".json,.txt,.csv" style="display: none;">
             `}
         </div>
 
