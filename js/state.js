@@ -3,7 +3,8 @@
 // ============================================
 export const APP = {
     currentUser: null,
-    page: 'login', // 'login', 'setup', 'match', 'history'
+    page: 'login', // 'login', 'register', 'reset-password', 'home', 'setup', 'match', 'history', 'viewMatch'
+    matchMode: 'simple', // 'simple' or 'advanced' - controls which features are enabled
     homeTeam: 'Eget lag',
     awayTeam: 'Motstander',
     matchDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format

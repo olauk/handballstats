@@ -65,7 +65,7 @@ export async function handleRegister(e) {
             displayName: name,
             homeTeam: homeTeam || 'Mitt lag'
         };
-        APP.page = 'welcome';
+        APP.page = 'home';
 
         alert('Bruker opprettet! Velkommen til Handball Analytics 🎉');
         return true;
@@ -137,7 +137,7 @@ export async function handleLogin(e) {
             displayName: userData?.name || user.displayName || 'Bruker',
             homeTeam: userData?.homeTeam || 'Mitt lag'
         };
-        APP.page = 'welcome';
+        APP.page = 'home';
 
         saveToLocalStorageImmediate();
         return true;
@@ -308,8 +308,8 @@ export function initAuthStateObserver(onAuthStateChanged) {
 
                 // Only change page if we're on login page
                 if (APP.page === 'login' || APP.page === 'register' || APP.page === 'reset-password') {
-                    APP.page = 'welcome';
-                    console.log('📄 Redirecting to welcome page');
+                    APP.page = 'home';
+                    console.log('📄 Redirecting to home page');
                 }
 
                 onAuthStateChanged();

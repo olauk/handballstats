@@ -171,7 +171,7 @@ export async function finishMatch() {
     PERFORMANCE.invalidateStatsCache();
 
     alert('Kampen er avsluttet og lagret!');
-    APP.page = 'welcome';
+    APP.page = 'home';
     return true;
 }
 
