@@ -5,6 +5,7 @@ import { APP, PERFORMANCE } from './state.js';
 import { saveToLocalStorage } from './storage.js';
 import { logShotEvent, logAppEvent } from './debug-logger.js';
 import { getCurrentTimerTime } from './timer.js';
+import { updateEventFeed } from './ui/event-feed.js';
 
 export function handleGoalClick(e) {
     // Validate keeper selection if in defense mode
@@ -196,6 +197,10 @@ export function registerShot(playerId, closeModal, updateGoalVisualization, upda
     // Optimalisert: Oppdater kun målvisualisering og statistikk, ikke hele siden
     updateGoalVisualization();
     updateStatisticsOnly();
+
+    // Update event feed if in advanced mode
+    updateEventFeed();
+
     return true;
 }
 
@@ -311,6 +316,10 @@ export function registerTechnicalError(playerId, closeModal, updateStatisticsOnl
 
     // Optimalisert: Oppdater kun statistikk, ikke hele siden
     updateStatisticsOnly();
+
+    // Update event feed if in advanced mode
+    updateEventFeed();
+
     return true;
 }
 

@@ -4,6 +4,7 @@
 import { APP, getCurrentPlayers, getCurrentOpponents, getCurrentEvents } from '../state.js';
 import { getTeamGoals, getPlayerStats, getOpponentStats } from '../statistics.js';
 import { renderTimerControls } from '../timer.js';
+import { renderEventFeed } from './event-feed.js';
 
 export function renderMatchPage() {
     const keeperOptions = APP.players.filter(p => p.isKeeper).map(k =>
@@ -94,6 +95,7 @@ export function renderMatchPage() {
             </div>
 
             ${renderGoalVisualization()}
+            ${renderEventFeed()}
             ${renderStatistics()}
         </div>
 
