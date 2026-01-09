@@ -1,7 +1,7 @@
 // ============================================
 // DATA MANAGEMENT & UTILITY FUNCTIONS
 // ============================================
-import { APP, PERFORMANCE } from './state.js';
+import { APP, PERFORMANCE, generateUniqueId } from './state.js';
 import { saveToLocalStorageImmediate } from './storage.js';
 import { saveCompletedMatchToFirestore, deleteCompletedMatchFromFirestore } from './firestore-storage.js';
 import { logAppEvent } from './debug-logger.js';
@@ -35,7 +35,7 @@ export function handlePlayersFileUpload(event, updatePlayersManagementModal, sho
                 players = lines.map((line, index) => {
                     const [number, name, isKeeper] = line.split(',').map(s => s.trim());
                     return {
-                        id: Date.now() + index + Math.floor(Math.random() * 100),
+                        id: generateUniqueId(),
                         name: name || `Spiller ${index + 1}`,
                         number: parseInt(number) || index + 1,
                         isKeeper: isKeeper === 'true' || isKeeper === '1'
@@ -76,7 +76,7 @@ export function handleOpponentsFileUpload(event, updatePlayersManagementModal, s
                 opponents = lines.map((line, index) => {
                     const [number, name] = line.split(',').map(s => s.trim());
                     return {
-                        id: Date.now() + index + Math.floor(Math.random() * 100),
+                        id: generateUniqueId(),
                         name: name || `Motstander ${index + 1}`,
                         number: parseInt(number) || index + 1
                     };

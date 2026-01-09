@@ -1,7 +1,7 @@
 // ============================================
 // PLAYER MANAGEMENT
 // ============================================
-import { APP } from './state.js';
+import { APP, generateUniqueId } from './state.js';
 import { saveToLocalStorage } from './storage.js';
 
 export function openPlayersManagement(updatePlayersManagementModal, showModal) {
@@ -54,8 +54,8 @@ export function addPlayerToTempList(updatePlayersManagementModal) {
         }
         APP.editingPlayerId = null;
     } else {
-        // Legg til ny spiller
-        const newId = Date.now() + Math.floor(Math.random() * 1000);
+        // Legg til ny spiller med garantert unik ID
+        const newId = generateUniqueId();
         const newPlayer = {
             id: newId,
             number: number,

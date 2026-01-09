@@ -45,6 +45,18 @@ export function loadFromLocalStorage() {
 
             // Restore everything else (match data, player data, completed matches, etc.)
             Object.assign(APP, data);
+
+            // Initialize or update _idCounter to prevent ID collisions
+            // Set it to be higher than all existing IDs
+            const allIds = [
+                ...APP.players.map(p => p.id),
+                ...APP.opponents.map(p => p.id)
+            ];
+            if (allIds.length > 0) {
+                const maxId = Math.max(...allIds);
+                // Set counter to ensure next ID will be higher than any existing ID
+                APP._idCounter = Math.max(APP._idCounter || 0, maxId - Date.now() + 1000);
+            }
         }
     } catch (e) {
         console.error('Kunne ikke laste fra localStorage:', e);
