@@ -3,7 +3,7 @@
 // ============================================
 export const APP = {
     currentUser: null,
-    page: 'login', // 'login', 'register', 'reset-password', 'home', 'setup', 'match', 'history', 'viewMatch'
+    page: 'login', // 'login', 'register', 'reset-password', 'home', 'setup', 'match', 'history', 'viewMatch', 'teamRoster'
     matchMode: 'simple', // 'simple' or 'advanced' - controls which features are enabled
     homeTeam: 'Eget lag',
     awayTeam: 'Motstander',
@@ -34,7 +34,12 @@ export const APP = {
         intervalId: null // For setInterval
     },
     // ID generator state - ensures unique IDs across all players and opponents
-    _idCounter: 0 // Internal counter for generating unique IDs
+    _idCounter: 0, // Internal counter for generating unique IDs
+    // Saved teams/rosters - allows user to save multiple teams with player rosters
+    savedTeams: [], // [{id, name, players: [{id, number, name, isKeeper}]}]
+    editingTeamId: null, // ID of team currently being edited
+    // Import team state - tracks which team is being imported
+    importingTeamId: null // ID of team being imported to setup
 };
 
 // ============================================

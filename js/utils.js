@@ -240,3 +240,25 @@ export function resetMatch() {
     }
     return false;
 }
+
+export function resetSetup() {
+    if (confirm('Er du sikker på at du vil nullstille kampoppsettet?\n\nDette vil fjerne:\n- Lagnavn\n- Alle spillere fra begge lag\n\nKampdata (hendelser) blir ikke slettet.')) {
+        // Nullstill lagnavn til default
+        APP.homeTeam = 'Eget lag';
+        APP.awayTeam = 'Motstander';
+
+        // Fjern alle spillere fra begge lag
+        APP.players = [];
+        APP.opponents = [];
+
+        // Fjern aktiv keeper
+        APP.activeKeeper = null;
+
+        // Invalider cache
+        PERFORMANCE.invalidateStatsCache();
+
+        saveToLocalStorageImmediate(); // Bruk umiddelbar lagring for kritiske operasjoner
+        return true;
+    }
+    return false;
+}

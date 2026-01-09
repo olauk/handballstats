@@ -68,13 +68,18 @@ export function renderHomePage() {
                 <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
                     <button class="btn btn-primary btn-lg"
                             data-action="startWithMode"
-                            style="padding: 1rem 2rem; font-size: 1.125rem;">
-                        Start kamp med ${APP.matchMode === 'simple' ? 'enkel' : 'avansert'} modus
+                            style="padding: 0.5rem 1rem; font-size: 1.125rem;">
+                        ▶ Start kamp
+                    </button>
+                    <button class="btn btn-blue btn-lg"
+                            data-action="manageTeamRosters"
+                            style="padding: 0.5rem 1rem; font-size: 1.125rem;">
+                        👥 Spillerstall
                     </button>
                     <button class="btn btn-secondary btn-lg"
                             data-action="viewHistory"
-                            style="padding: 1rem 2rem; font-size: 1.125rem;">
-                        📚 Se tidligere kamper
+                            style="padding: 0.5rem 1rem; font-size: 1.125rem;">
+                        📚 Tidligere kamper
                     </button>
                 </div>
 

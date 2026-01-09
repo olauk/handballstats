@@ -4,6 +4,7 @@
 import { APP, getCurrentEvents, getCurrentPlayers, getCurrentOpponents } from '../state.js';
 import { renderShotPopupContent, renderTechnicalPopupContent } from '../shots.js';
 import { renderPlayersManagementPopupContent } from '../players.js';
+import { renderTeamRosterEditModalContent } from './team-roster.js';
 
 export function showModal(modalId) {
     setTimeout(() => {
@@ -199,6 +200,16 @@ export function updatePlayersManagementModal() {
     const modalContent = modal.querySelector('.modal-content');
     if (modalContent) {
         modalContent.innerHTML = renderPlayersManagementPopupContent();
+    }
+}
+
+export function updateTeamRosterEditModal() {
+    const modal = document.getElementById('teamRosterEditModal');
+    if (!modal) return;
+
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.innerHTML = renderTeamRosterEditModalContent();
     }
 }
 

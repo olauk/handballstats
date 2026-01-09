@@ -28,6 +28,7 @@ import {
     showPlayerShotDetails,
     showKeeperShotDetails,
     updatePlayersManagementModal,
+    updateTeamRosterEditModal,
     updateStatisticsOnly,
     attachModalEventListeners as modalListeners
 } from './ui/modals.js';
@@ -37,11 +38,25 @@ import {
     handlePlayersFileUpload,
     handleOpponentsFileUpload,
     resetMatch,
+    resetSetup,
     exportData,
     finishMatch,
     deleteCompletedMatch,
     viewCompletedMatch
 } from './utils.js';
+import {
+    createNewTeamRoster,
+    editTeamRoster,
+    deleteTeamRoster,
+    saveTeamRoster,
+    closeTeamRosterEdit,
+    addPlayerToRoster,
+    editPlayerInRoster,
+    saveRosterPlayer,
+    removePlayerFromRoster,
+    cancelRosterPlayerEdit,
+    importTeamRosterToSetup
+} from './team-roster.js';
 import { renderStatistics } from './ui/match.js';
 import { exportDebugLogs } from './debug-logger.js';
 import { startTimer, pauseTimer, resetTimer } from './timer.js';
@@ -196,6 +211,9 @@ export function setupGlobalEventListeners(render) {
             case 'resetMatch':
                 if (resetMatch()) render();
                 break;
+            case 'resetSetup':
+                if (resetSetup()) render();
+                break;
             case 'exportData':
                 exportData();
                 break;
@@ -307,6 +325,66 @@ export function setupGlobalEventListeners(render) {
                     APP.currentHalf = 2;
                     saveToLocalStorage();
                     render();
+                }
+                break;
+            case 'manageTeamRosters':
+                APP.page = 'teamRoster';
+                saveToLocalStorage();
+                render();
+                break;
+            case 'createNewTeamRoster':
+                createNewTeamRoster(updateTeamRosterEditModal, showModal);
+                break;
+            case 'editTeamRoster':
+                editTeamRoster(parseInt(button.dataset.teamId), updateTeamRosterEditModal, showModal);
+                break;
+            case 'deleteTeamRoster':
+                if (deleteTeamRoster(parseInt(button.dataset.teamId))) render();
+                break;
+            case 'saveTeamRoster':
+                if (saveTeamRoster(closeModal)) render();
+                break;
+            case 'closeTeamRosterEdit':
+                closeTeamRosterEdit(closeModal);
+                break;
+            case 'addPlayerToRoster':
+                addPlayerToRoster(updateTeamRosterEditModal);
+                break;
+            case 'editPlayerInRoster':
+                editPlayerInRoster(parseInt(button.dataset.playerId), updateTeamRosterEditModal);
+                break;
+            case 'saveRosterPlayer':
+                saveRosterPlayer(updateTeamRosterEditModal);
+                break;
+            case 'removePlayerFromRoster':
+                removePlayerFromRoster(parseInt(button.dataset.playerId), updateTeamRosterEditModal);
+                break;
+            case 'cancelRosterPlayerEdit':
+                cancelRosterPlayerEdit(updateTeamRosterEditModal);
+                break;
+            case 'toggleImportMenu':
+                showModal('importTeamMenu');
+                break;
+            case 'closeImportMenu':
+                closeModal('importTeamMenu');
+                break;
+            case 'selectTeamForImport':
+                APP.importingTeamId = parseInt(button.dataset.teamId);
+                closeModal('importTeamMenu');
+                showModal('importModeDialog');
+                break;
+            case 'closeImportModeDialog':
+                APP.importingTeamId = null;
+                closeModal('importModeDialog');
+                break;
+            case 'confirmImport':
+                if (APP.importingTeamId) {
+                    const mode = button.dataset.mode; // 'replace' or 'merge'
+                    if (importTeamRosterToSetup(APP.importingTeamId, 'players', mode)) {
+                        APP.importingTeamId = null;
+                        closeModal('importModeDialog');
+                        render();
+                    }
                 }
                 break;
         }
