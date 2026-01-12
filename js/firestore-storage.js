@@ -8,6 +8,10 @@ import { auth, db } from './firebase-config.js';
 // SAVE ACTIVE MATCH TO FIRESTORE
 // ============================================
 export async function saveMatchToFirestore() {
+    // ============================================
+    // VALIDATION
+    // ============================================
+
     if (!auth.currentUser) {
         console.warn('⚠️ Cannot save to Firestore: No user logged in');
         return false;
@@ -18,6 +22,10 @@ export async function saveMatchToFirestore() {
         console.log('ℹ️ No active match data to save');
         return true;
     }
+
+    // ============================================
+    // PREPARE DATA
+    // ============================================
 
     try {
         const userId = auth.currentUser.uid;
@@ -36,13 +44,48 @@ export async function saveMatchToFirestore() {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
+        // ============================================
+        // SAVE TO FIRESTORE
+        // ============================================
+
         // Use a fixed document ID for the active match
         await db.collection('users').doc(userId).collection('matches').doc('active').set(matchData, { merge: true });
 
         console.log('✅ Active match saved to Firestore');
         return true;
+
     } catch (error) {
+        // ============================================
+        // ERROR HANDLING
+        // ============================================
+
         console.error('❌ Error saving match to Firestore:', error);
+
+        // Handle different error types
+        if (error.code === 'unavailable') {
+            // Network error - silent fail, will retry automatically
+            console.warn('⚠️ Firestore unavailable (network error) - will retry on next save');
+        } else if (error.code === 'permission-denied') {
+            // Permission error - critical
+            console.error('🔴 CRITICAL: Permission denied - check Firestore security rules');
+            // Don't show alert - this should not happen in production
+        } else {
+            // Other errors - log but don't alert (non-critical since localStorage is primary)
+            console.error('⚠️ Firestore save failed (non-critical):', error.message);
+        }
+
+        // Log error for debugging
+        try {
+            await logAppEvent('error', {
+                function: 'saveMatchToFirestore',
+                error: error.message,
+                errorCode: error.code,
+                errorName: error.name
+            });
+        } catch (logError) {
+            console.error('Failed to log Firestore error:', logError);
+        }
+
         return false;
     }
 }

@@ -4,32 +4,111 @@
 import { APP, PERFORMANCE } from './state.js';
 import { saveMatchToFirestoreDebounced } from './firestore-storage.js';
 
-export function saveToLocalStorage() {
-    // Debounce: Vent 300ms før lagring for å unngå for mange skriveoperasjoner
-    clearTimeout(PERFORMANCE.saveTimeout);
-    PERFORMANCE.saveTimeout = setTimeout(() => {
-        try {
-            localStorage.setItem('handballApp', JSON.stringify(APP));
+// ============================================
+// SAVE QUEUE SYSTEM
+// ============================================
+// This queue system ensures no data is lost during rapid successive saves
+// All save requests are queued and processed in batches every 300ms
 
-            // Also save to Firestore (debounced)
-            saveMatchToFirestoreDebounced();
-        } catch (e) {
-            console.error('Kunne ikke lagre til localStorage:', e);
+let saveQueue = {
+    pending: false,          // Is there a pending save request?
+    isProcessing: false,     // Is a save currently being processed?
+    lastError: null          // Last error that occurred during save
+};
+
+export function saveToLocalStorage() {
+    // Mark that a save is pending
+    saveQueue.pending = true;
+
+    // If we're not already processing saves, start the debounce timer
+    if (!saveQueue.isProcessing) {
+        saveQueue.isProcessing = true;
+
+        clearTimeout(PERFORMANCE.saveTimeout);
+        PERFORMANCE.saveTimeout = setTimeout(() => {
+            processSaveQueue();
+        }, 300);
+    }
+    // If timer is already running, the pending flag ensures we'll save when it fires
+}
+
+function processSaveQueue() {
+    // Check if there's actually a pending save
+    if (!saveQueue.pending) {
+        saveQueue.isProcessing = false;
+        return;
+    }
+
+    try {
+        // Save current state to localStorage
+        localStorage.setItem('handballApp', JSON.stringify(APP));
+
+        // Clear pending flag and error
+        saveQueue.pending = false;
+        saveQueue.lastError = null;
+
+        // Also save to Firestore (debounced)
+        saveMatchToFirestoreDebounced();
+
+        // Check if any new saves came in while we were processing
+        if (saveQueue.pending) {
+            // New saves arrived, schedule another batch
+            clearTimeout(PERFORMANCE.saveTimeout);
+            PERFORMANCE.saveTimeout = setTimeout(() => {
+                processSaveQueue();
+            }, 300);
+        } else {
+            // No more pending saves
+            saveQueue.isProcessing = false;
         }
-    }, 300);
+    } catch (error) {
+        console.error('❌ Failed to save to localStorage:', error);
+        saveQueue.lastError = error;
+        saveQueue.isProcessing = false;
+
+        // Handle quota exceeded error
+        if (error.name === 'QuotaExceededError') {
+            // Will be handled by error handling system
+            throw error;
+        }
+    }
 }
 
 export function saveToLocalStorageImmediate() {
     // For kritiske operasjoner som krever umiddelbar lagring
+    // This bypasses the queue and saves immediately
     clearTimeout(PERFORMANCE.saveTimeout);
+    saveQueue.isProcessing = false;
+    saveQueue.pending = false;
+
     try {
         localStorage.setItem('handballApp', JSON.stringify(APP));
+        saveQueue.lastError = null;
 
         // Also save to Firestore (debounced - will save after 1 second)
         saveMatchToFirestoreDebounced();
-    } catch (e) {
-        console.error('Kunne ikke lagre til localStorage:', e);
+
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to save immediately to localStorage:', error);
+        saveQueue.lastError = error;
+
+        // Handle quota exceeded error
+        if (error.name === 'QuotaExceededError') {
+            throw error;
+        }
+
+        return false;
     }
+}
+
+// Export queue status for error handling
+export function getSaveQueueStatus() {
+    return {
+        pending: saveQueue.pending,
+        isProcessing: saveQueue.isProcessing,
+        lastError: saveQueue.lastError
+    };
 }
 
 export function loadFromLocalStorage() {

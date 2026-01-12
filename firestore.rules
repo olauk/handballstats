@@ -3,31 +3,85 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User profiles - only the user can read/write their own profile
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user is the owner of the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if user is admin
+    // TODO: Implement proper admin role checking when admin feature is added
+    // For now, this is a placeholder that denies all admin-only operations
+    function isAdmin() {
+      return false;  // Will be updated when admin feature is implemented
+      // Future implementation:
+      // return isAuthenticated() &&
+      //        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ============================================
+    // USER PROFILES AND USER DATA
+    // ============================================
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Users can only read and write their own profile
+      allow read, write: if isOwner(userId);
 
-      // Matches subcollection - only the user can read/write their own matches
+      // ============================================
+      // USER MATCHES (includes both active and completed)
+      // ============================================
+
       match /matches/{matchId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Users can only read and write their own matches
+        // matchId can be 'active' for current match, or timestamp for completed matches
+        allow read, write: if isOwner(userId);
       }
 
-      // Debug logs subcollection - only the user can read/write their own logs
+      // ============================================
+      // DEBUG LOGS (only admin can read)
+      // ============================================
+
       match /debug_logs/{logId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Any authenticated user can write debug logs
+        allow create: if isOwner(userId);
+
+        // Only admin can read debug logs (currently disabled)
+        // TODO: Enable admin read access when admin feature is implemented
+        allow read: if isAdmin();
+
+        // Never allow updates or deletes (logs are immutable)
+        allow update, delete: if false;
       }
     }
 
-    // Shared matches - users can read matches shared with them
-    match /sharedMatches/{shareId} {
-      allow read: if request.auth != null && request.auth.uid in resource.data.sharedWith;
-      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
-    }
+    // ============================================
+    // FUTURE: SHARED MATCHES
+    // ============================================
+    // This section is prepared for future match-sharing functionality
+    // Currently not in use, but structure is ready for implementation
 
-    // Block all other access
+    // match /sharedMatches/{shareId} {
+    //   allow read: if isAuthenticated() && request.auth.uid in resource.data.sharedWith;
+    //   allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+    //   allow update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    // }
+
+    // ============================================
+    // DENY ALL OTHER PATHS
+    // ============================================
+
+    // Explicitly deny access to any undeclared paths
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+

@@ -143,74 +143,195 @@ export function renderShotPopupContent() {
 }
 
 export function registerShot(playerId, closeModal, updateGoalVisualization, updateStatisticsOnly) {
-    if (!APP.tempShot) return false;
+    // ============================================
+    // VALIDATION
+    // ============================================
+
+    if (!APP.tempShot) {
+        console.error('❌ registerShot: No tempShot data');
+        return false;
+    }
+
+    if (!playerId) {
+        console.error('❌ registerShot: No playerId provided');
+        alert('Feil: Ingen spiller valgt. Vennligst velg en spiller.');
+        return false;
+    }
 
     const player = APP.mode === 'attack'
         ? APP.players.find(p => p.id === playerId)
         : APP.opponents.find(p => p.id === playerId);
 
-    if (!player) return false;
-
-    const event = {
-        id: Date.now(),
-        half: APP.currentHalf,
-        mode: APP.mode,
-        player: APP.mode === 'attack' ? player : null,
-        opponent: APP.mode === 'defense' ? player : null,
-        keeper: APP.mode === 'defense' ? APP.activeKeeper : null,
-        x: APP.tempShot.x,
-        y: APP.tempShot.y,
-        result: APP.tempShot.zone === 'outside' ? 'utenfor' : APP.selectedResult,
-        zone: APP.tempShot.zone,
-        timestamp: new Date().toLocaleTimeString('no-NO')
-    };
-
-    // Add timer timestamp in advanced mode
-    if (APP.matchMode === 'advanced') {
-        const timerTime = getCurrentTimerTime();
-
-        // Beregn total kamptid (legg til 1. omgangs lengde for 2. omgang)
-        let totalMinutes = timerTime.minutes;
-        let totalSeconds = timerTime.seconds;
-
-        if (APP.currentHalf === 2) {
-            totalMinutes += APP.timerConfig.halfLength;
-        }
-
-        event.timerTimestamp = {
-            minutes: totalMinutes,
-            seconds: totalSeconds
-        };
+    if (!player) {
+        console.error('❌ registerShot: Player not found', { playerId, mode: APP.mode });
+        alert('Feil: Spiller ikke funnet. Vennligst prøv igjen.');
+        return false;
     }
 
-    APP.events.push(event);
-    APP.tempShot = null;
-    APP.selectedResult = null;
+    // Validate keeper in defense mode
+    if (APP.mode === 'defense' && !APP.activeKeeper) {
+        console.warn('⚠️ registerShot: No active keeper in defense mode');
+        // Not critical - continue without keeper
+    }
 
-    // Invalider statistikk-cache siden vi har lagt til et nytt event
-    PERFORMANCE.invalidateStatsCache();
+    // ============================================
+    // CREATE EVENT OBJECT
+    // ============================================
 
-    // Log event for debugging
-    logShotEvent({
-        eventType: event.result === 'mål' ? 'goal' : event.result === 'redning' ? 'save' : 'miss',
-        player: player,
-        keeper: event.keeper,
-        result: event.result,
-        position: { x: event.x, y: event.y, zone: event.zone },
-        half: event.half
-    });
+    let event;
+    try {
+        event = {
+            id: Date.now(),
+            half: APP.currentHalf,
+            mode: APP.mode,
+            player: APP.mode === 'attack' ? player : null,
+            opponent: APP.mode === 'defense' ? player : null,
+            keeper: APP.mode === 'defense' ? APP.activeKeeper : null,
+            x: APP.tempShot.x,
+            y: APP.tempShot.y,
+            result: APP.tempShot.zone === 'outside' ? 'utenfor' : APP.selectedResult,
+            zone: APP.tempShot.zone,
+            timestamp: new Date().toLocaleTimeString('no-NO')
+        };
 
-    closeModal('shotPopup');
-    saveToLocalStorage();
+        // Add timer timestamp in advanced mode
+        if (APP.matchMode === 'advanced') {
+            const timerTime = getCurrentTimerTime();
 
-    // Optimalisert: Oppdater kun målvisualisering og statistikk, ikke hele siden
-    updateGoalVisualization();
-    updateStatisticsOnly();
+            // Beregn total kamptid (legg til 1. omgangs lengde for 2. omgang)
+            let totalMinutes = timerTime.minutes;
+            let totalSeconds = timerTime.seconds;
 
-    // Update event feed if in advanced mode
-    updateEventFeed();
+            if (APP.currentHalf === 2) {
+                totalMinutes += APP.timerConfig.halfLength;
+            }
 
-    return true;
+            event.timerTimestamp = {
+                minutes: totalMinutes,
+                seconds: totalSeconds
+            };
+        }
+    } catch (error) {
+        console.error('❌ Failed to create event object:', error);
+        alert('Feil ved opprettelse av hendelse. Vennligst prøv igjen.');
+        logAppEvent('error', { function: 'registerShot_createEvent', error: error.message });
+        return false;
+    }
+
+    // ============================================
+    // SAVE EVENT TO STATE AND STORAGE
+    // ============================================
+
+    try {
+        // Add event to state
+        APP.events.push(event);
+
+        // Save to localStorage (queued save - will execute after 300ms)
+        saveToLocalStorage();
+
+        // Clear temporary shot data AFTER successful save
+        APP.tempShot = null;
+        APP.selectedResult = null;
+
+        // Invalider statistikk-cache AFTER save
+        PERFORMANCE.invalidateStatsCache();
+
+        // Log event for debugging (non-critical, don't fail if this errors)
+        try {
+            logShotEvent({
+                eventType: event.result === 'mål' ? 'goal' : event.result === 'redning' ? 'save' : 'miss',
+                player: player,
+                keeper: event.keeper,
+                result: event.result,
+                position: { x: event.x, y: event.y, zone: event.zone },
+                half: event.half
+            });
+        } catch (logError) {
+            console.warn('⚠️ Failed to log shot event (non-critical):', logError);
+        }
+
+        // Close modal and update UI
+        closeModal('shotPopup');
+
+        // Optimalisert: Oppdater kun målvisualisering og statistikk, ikke hele siden
+        updateGoalVisualization();
+        updateStatisticsOnly();
+
+        // Update event feed if in advanced mode
+        try {
+            updateEventFeed();
+        } catch (feedError) {
+            console.warn('⚠️ Failed to update event feed (non-critical):', feedError);
+        }
+
+        return true;
+
+    } catch (error) {
+        // ============================================
+        // ERROR HANDLING WITH ROLLBACK
+        // ============================================
+
+        console.error('❌ CRITICAL: Failed to register shot:', error);
+
+        // Rollback: Remove event from state if it was added
+        const eventIndex = APP.events.findIndex(e => e.id === event.id);
+        if (eventIndex !== -1) {
+            APP.events.splice(eventIndex, 1);
+            console.log('✅ Rolled back event from state');
+        }
+
+        // Log error
+        try {
+            logAppEvent('error', {
+                function: 'registerShot',
+                error: error.message,
+                errorName: error.name,
+                playerId: playerId,
+                mode: APP.mode
+            });
+        } catch (logError) {
+            console.error('Failed to log error:', logError);
+        }
+
+        // Handle specific error types
+        if (error.name === 'QuotaExceededError') {
+            showRetryDialog(
+                'Lagringsplass full!',
+                'Enheten din har ikke mer lagringsplass. Vennligst avslutt noen gamle kamper eller slett noe data.',
+                () => {
+                    // Retry callback
+                    registerShot(playerId, closeModal, updateGoalVisualization, updateStatisticsOnly);
+                }
+            );
+        } else {
+            // Generic error with retry option
+            showRetryDialog(
+                'Kunne ikke lagre skudd',
+                `En feil oppstod: ${error.message}\n\nData er IKKE lagret. Vennligst prøv igjen.`,
+                () => {
+                    // Retry callback
+                    registerShot(playerId, closeModal, updateGoalVisualization, updateStatisticsOnly);
+                }
+            );
+        }
+
+        return false;
+    }
+}
+
+/**
+ * Show error dialog with retry option
+ * Only shown for critical errors
+ */
+function showRetryDialog(title, message, retryCallback) {
+    const retry = confirm(`${title}\n\n${message}\n\nTrykk OK for å prøve igjen, eller Avbryt for å fortsette uten å lagre.`);
+
+    if (retry && retryCallback) {
+        console.log('🔄 User requested retry');
+        retryCallback();
+    } else {
+        console.log('⚠️ User chose to continue without saving');
+    }
 }
 
 // Optimized function to only update goal area without re-rendering everything
