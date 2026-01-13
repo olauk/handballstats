@@ -1,8 +1,13 @@
-# Handball Analytics v3.0
+# Handball Analytics v3.1
 
 ## 🎯 Komplett håndballstatistikk-app med Firebase-autentisering
 
-### Nye funksjoner i v3.0 🔥🔥🔥
+### Nye funksjoner i v3.1 🔥
+- 🐛 **Smart debug logging** - Automatisk deaktivert i produksjon for kostnad og personvern
+- 📊 **Error tracking** - Kritiske feil logges alltid for feilsøking
+- 🔧 **Debug mode toggle** - Aktiver detaljert logging ved behov
+
+### Funksjoner fra v3.0 🔥🔥🔥
 - 🔐 **Firebase-autentisering** - Ekte brukerregistrering og innlogging
 - ☁️ **Firebase Hosting** - Profesjonell hosting med gratis SSL
 - 👤 **Brukerprofiler** - Lagret i Firestore med navn, e-post og hjemmelag
@@ -142,6 +147,47 @@ Eller åpne `index.html` direkte i nettleseren.
 - Tilgang til kamper fra flere enheter
 - Deling av kamper med trenerteam
 - Backup i skyen
+
+### Debug Logging & Feilsøking
+
+**Logging-system:**
+- **Production mode** (standard): Kun kritiske feil logges for å spare kostnader og beskytte personvern
+- **Development mode**: Full detaljert logging av alle events (automatisk på localhost)
+
+**Aktivere debug mode i production:**
+
+1. Via URL parameter:
+   ```
+   https://handballstats-c80f3.web.app/?debug=true
+   ```
+
+2. Via browser console:
+   ```javascript
+   // Aktiver debug logging
+   localStorage.setItem('debugMode', 'true')
+
+   // Deaktiver debug logging
+   localStorage.removeItem('debugMode')
+   ```
+
+3. Via importerte funksjoner:
+   ```javascript
+   import { enableDebugMode, disableDebugMode, isDebugModeEnabled } from './js/debug-logger.js';
+
+   enableDebugMode();   // Aktiverer debug logging
+   disableDebugMode();  // Deaktiverer debug logging
+   isDebugModeEnabled(); // Sjekker om debug mode er på
+   ```
+
+**Eksportere debug data:**
+- Debug logs lagres i Firestore under `users/{userId}/debug_logs`
+- Bruk konsoll-funksjon for å eksportere data til JSON-fil
+- Kritiske feil logges alltid i `users/{userId}/errors` (selv i production)
+
+**Beste praksis:**
+- La debug mode være AV i normal produksjonsbruk
+- Aktiver kun når du trenger å feilsøke et spesifikt problem
+- Debug logs slettes automatisk etter 30 dager
 
 ### Neste steg
 
