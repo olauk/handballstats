@@ -1,0 +1,50 @@
+{
+  "name": "handballstats",
+  "version": "1.0.0",
+  "description": "- 🐛 **Smart debug logging** - Automatisk deaktivert i produksjon for kostnad og personvern - 📊 **Error tracking** - Kritiske feil logges alltid for feilsøking - 🔧 **Debug mode toggle** - Aktiver detaljert logging ved behov",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest run",
+    "lint": "eslint js/ tests/",
+    "lint:fix": "eslint js/ tests/ --fix",
+    "format": "prettier --write \"**/*.{js,css,html}\"",
+    "format:check": "prettier --check \"**/*.{js,css,html}\"",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:45004/git/olauk/handballstats"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@vitest/coverage-v8": "^4.0.17",
+    "@vitest/ui": "^4.0.17",
+    "eslint": "^9.39.2",
+    "eslint-plugin-vitest": "^0.5.4",
+    "husky": "^9.1.7",
+    "jsdom": "^27.4.0",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4",
+    "vitest": "^4.0.17"
+  },
+  "lint-staged": {
+    "tests/**/*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.config.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,html}": [
+      "prettier --write"
+    ]
+  }
+}
