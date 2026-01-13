@@ -1,13 +1,42 @@
 /**
  * Debug Logger - Tracks all shot registrations and events for debugging
  * Stores comprehensive logs in Firestore for troubleshooting and analysis
+ *
+ * PRODUCTION MODE: Debug logging is disabled by default in production to:
+ * - Reduce Firestore costs (write operations)
+ * - Protect user privacy (detailed event data)
+ * - Improve performance
+ *
+ * Enable debug mode by:
+ * 1. Adding ?debug=true to URL
+ * 2. Setting localStorage: localStorage.setItem('debugMode', 'true')
+ * 3. Running in development (localhost)
  */
 
 import { auth, db } from './firebase-config.js';
 import { APP } from './state.js';
 
 /**
+ * Checks if debug logging should be enabled
+ * @returns {boolean} True if in development or debug mode is explicitly enabled
+ */
+function shouldLog() {
+    // Check if running on localhost (development)
+    const isDevelopment = window.location.hostname === 'localhost' ||
+                         window.location.hostname === '127.0.0.1';
+
+    // Check if debug mode is explicitly enabled via URL parameter
+    const urlDebugMode = window.location.search.includes('debug=true');
+
+    // Check if debug mode is enabled in localStorage
+    const localStorageDebugMode = localStorage.getItem('debugMode') === 'true';
+
+    return isDevelopment || urlDebugMode || localStorageDebugMode;
+}
+
+/**
  * Logs a shot registration event to Firestore
+ * NOTE: Only runs in development mode or when debug mode is explicitly enabled
  * @param {Object} eventData - The event data to log
  * @param {string} eventData.eventType - Type of event (e.g., 'goal', 'save', 'miss')
  * @param {Object} eventData.player - Player who took the shot or made the save
@@ -17,6 +46,10 @@ import { APP } from './state.js';
  * @param {string} eventData.half - Which half (1 or 2)
  */
 export async function logShotEvent(eventData) {
+    // Skip detailed logging in production unless explicitly enabled
+    if (!shouldLog()) {
+        return;
+    }
     try {
         const user = auth.currentUser;
         if (!user) {
@@ -43,7 +76,7 @@ export async function logShotEvent(eventData) {
                 id: eventData.player.id,
                 name: eventData.player.name,
                 number: eventData.player.number,
-                isKeeper: eventData.player.isKeeper
+                isKeeper: eventData.player.isKeeper || false
             } : null,
 
             // Keeper information (for defense mode)
@@ -97,10 +130,16 @@ export async function logShotEvent(eventData) {
 
 /**
  * Logs a general app event (not shot-related)
+ * NOTE: Only runs in development mode or when debug mode is explicitly enabled
  * @param {string} eventType - Type of event (e.g., 'match_started', 'match_finished', 'player_added')
  * @param {Object} data - Additional data to log
  */
 export async function logAppEvent(eventType, data = {}) {
+    // Skip detailed logging in production unless explicitly enabled
+    if (!shouldLog()) {
+        return;
+    }
+
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -123,6 +162,70 @@ export async function logAppEvent(eventType, data = {}) {
     } catch (error) {
         console.error('❌ Failed to log app event:', error);
     }
+}
+
+/**
+ * Logs critical errors - ALWAYS runs, even in production
+ * Use this for catching and tracking unexpected errors that need investigation
+ * @param {Error} error - The error object
+ * @param {Object} context - Additional context about where/when the error occurred
+ */
+export async function logError(error, context = {}) {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            console.error('❌ Error occurred but no user to log it:', error);
+            return;
+        }
+
+        const errorEntry = {
+            clientTimestamp: new Date().toISOString(),
+            serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            errorMessage: error.message || String(error),
+            errorStack: error.stack || null,
+            context: context,
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            userId: user.uid
+        };
+
+        await db.collection('users')
+            .doc(user.uid)
+            .collection('errors')
+            .add(errorEntry);
+
+        console.error('❌ Error logged to Firestore:', error);
+
+    } catch (loggingError) {
+        // Don't let logging errors break the app
+        console.error('❌ Failed to log error to Firestore:', loggingError);
+    }
+}
+
+/**
+ * Enables debug mode for the current session
+ * This allows detailed logging even in production
+ */
+export function enableDebugMode() {
+    localStorage.setItem('debugMode', 'true');
+    console.log('🐛 Debug mode ENABLED - Detailed logging is now active');
+    console.log('ℹ️ To disable: localStorage.removeItem("debugMode") or call disableDebugMode()');
+}
+
+/**
+ * Disables debug mode
+ */
+export function disableDebugMode() {
+    localStorage.removeItem('debugMode');
+    console.log('✅ Debug mode DISABLED - Logging is now production-safe');
+}
+
+/**
+ * Checks if debug mode is currently active
+ * @returns {boolean}
+ */
+export function isDebugModeEnabled() {
+    return shouldLog();
 }
 
 /**

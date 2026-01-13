@@ -46,16 +46,25 @@ service cloud.firestore {
       }
 
       // ============================================
-      // DEBUG LOGS (only admin can read)
+      // DEBUG LOGS (development/staging only)
       // ============================================
 
       match /debug_logs/{logId} {
-        // Any authenticated user can write debug logs
-        allow create: if isOwner(userId);
+        // Users can read and create their own debug logs
+        // Note: Debug logging is disabled in production by default (client-side)
+        allow read, create: if isOwner(userId);
 
-        // Only admin can read debug logs (currently disabled)
-        // TODO: Enable admin read access when admin feature is implemented
-        allow read: if isAdmin();
+        // Never allow updates or deletes (logs are immutable)
+        allow update, delete: if false;
+      }
+
+      // ============================================
+      // ERROR LOGS (always enabled, even in production)
+      // ============================================
+
+      match /errors/{errorId} {
+        // Users can read and create their own error logs
+        allow read, create: if isOwner(userId);
 
         // Never allow updates or deletes (logs are immutable)
         allow update, delete: if false;
