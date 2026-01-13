@@ -292,23 +292,89 @@ export async function syncFromFirestore() {
         // Load active match
         const activeMatch = await loadActiveMatchFromFirestore();
         if (activeMatch) {
-            APP.homeTeam = activeMatch.homeTeam || APP.homeTeam;
-            APP.awayTeam = activeMatch.awayTeam || APP.awayTeam;
-            APP.matchDate = activeMatch.matchDate || APP.matchDate;
-            APP.currentHalf = activeMatch.currentHalf || APP.currentHalf;
-            APP.players = activeMatch.players || [];
-            APP.opponents = activeMatch.opponents || [];
-            APP.events = activeMatch.events || [];
-            APP.activeKeeper = activeMatch.activeKeeper || null;
-            APP.mode = activeMatch.mode || 'attack';
+            // Check if we have local data to merge
+            const hasLocalData = APP.events.length > 0 || APP.players.length > 0;
 
-            // Invalidate stats cache
+            if (hasLocalData) {
+                // MERGE STRATEGY: Combine local and Firestore data intelligently
+                console.log('🔀 Merging local and Firestore data...');
+
+                // Merge events based on ID to avoid duplicates
+                const localEvents = APP.events || [];
+                const firestoreEvents = activeMatch.events || [];
+
+                // Create a Map to deduplicate by event ID
+                const eventMap = new Map();
+
+                // Add local events first
+                localEvents.forEach(event => {
+                    eventMap.set(event.id, event);
+                });
+
+                // Add Firestore events (if not already present)
+                let newEventsCount = 0;
+                firestoreEvents.forEach(event => {
+                    if (!eventMap.has(event.id)) {
+                        eventMap.set(event.id, event);
+                        newEventsCount++;
+                    }
+                });
+
+                // Convert back to array and sort by id (chronological order)
+                APP.events = Array.from(eventMap.values()).sort((a, b) => a.id - b.id);
+
+                if (newEventsCount > 0) {
+                    console.log(`✅ Merged ${newEventsCount} new events from Firestore`);
+                }
+
+                // Merge players/opponents (prefer Firestore if local is empty, otherwise keep local)
+                APP.players = APP.players.length > 0 ? APP.players : (activeMatch.players || []);
+                APP.opponents = APP.opponents.length > 0 ? APP.opponents : (activeMatch.opponents || []);
+
+                // For other fields, prefer local if exists, otherwise use Firestore
+                APP.homeTeam = APP.homeTeam !== 'Eget lag' ? APP.homeTeam : activeMatch.homeTeam;
+                APP.awayTeam = APP.awayTeam !== 'Motstander' ? APP.awayTeam : activeMatch.awayTeam;
+                APP.matchDate = APP.matchDate || activeMatch.matchDate;
+                APP.currentHalf = APP.currentHalf || activeMatch.currentHalf;
+                APP.activeKeeper = APP.activeKeeper || activeMatch.activeKeeper;
+                APP.mode = APP.mode || activeMatch.mode;
+
+            } else {
+                // No local data, just use Firestore data directly
+                console.log('📥 Loading data from Firestore (no local data)...');
+                APP.homeTeam = activeMatch.homeTeam || APP.homeTeam;
+                APP.awayTeam = activeMatch.awayTeam || APP.awayTeam;
+                APP.matchDate = activeMatch.matchDate || APP.matchDate;
+                APP.currentHalf = activeMatch.currentHalf || APP.currentHalf;
+                APP.players = activeMatch.players || [];
+                APP.opponents = activeMatch.opponents || [];
+                APP.events = activeMatch.events || [];
+                APP.activeKeeper = activeMatch.activeKeeper || null;
+                APP.mode = activeMatch.mode || 'attack';
+            }
+
+            // Invalidate stats cache after merge
             PERFORMANCE.invalidateStatsCache();
         }
 
-        // Load completed matches
-        const completedMatches = await loadCompletedMatchesFromFirestore();
-        APP.completedMatches = completedMatches;
+        // Load and merge completed matches
+        const firestoreMatches = await loadCompletedMatchesFromFirestore();
+        const localMatches = APP.completedMatches || [];
+
+        // Merge completed matches by ID (avoid duplicates)
+        const matchMap = new Map();
+
+        // Add local matches
+        localMatches.forEach(match => {
+            matchMap.set(match.id, match);
+        });
+
+        // Add Firestore matches (overwrites local if same ID - Firestore is source of truth)
+        firestoreMatches.forEach(match => {
+            matchMap.set(match.id, match);
+        });
+
+        APP.completedMatches = Array.from(matchMap.values());
 
         console.log('✅ Sync complete');
         return true;

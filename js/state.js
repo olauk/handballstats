@@ -39,7 +39,9 @@ export const APP = {
     savedTeams: [], // [{id, name, players: [{id, number, name, isKeeper}]}]
     editingTeamId: null, // ID of team currently being edited
     // Import team state - tracks which team is being imported
-    importingTeamId: null // ID of team being imported to setup
+    importingTeamId: null, // ID of team being imported to setup
+    // File import lock - prevents race condition when importing multiple files rapidly
+    isImportingFile: false // Lock to prevent parallel file imports
 };
 
 // ============================================
@@ -49,6 +51,7 @@ export const PERFORMANCE = {
     statsCache: new Map(),
     cacheVersion: 0,
     saveTimeout: null,
+    maxCacheSize: 500, // Maximum number of cache entries before clearing
 
     invalidateStatsCache() {
         this.cacheVersion++;
@@ -56,6 +59,14 @@ export const PERFORMANCE = {
     },
 
     getCachedStats(key, calculator) {
+        // Memory Leak Fix: Clear cache if it grows too large
+        if (this.statsCache.size >= this.maxCacheSize) {
+            console.warn(`⚠️ Stats cache reached max size (${this.maxCacheSize}), clearing...`);
+            this.statsCache.clear();
+            // Increment version to invalidate any external references
+            this.cacheVersion++;
+        }
+
         const cacheKey = `${key}-v${this.cacheVersion}`;
         if (!this.statsCache.has(cacheKey)) {
             this.statsCache.set(cacheKey, calculator());
