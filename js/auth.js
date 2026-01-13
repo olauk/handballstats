@@ -7,6 +7,60 @@ import { auth, db } from './firebase-config.js';
 import { migrateLocalStorageToFirestore, syncFromFirestore } from './firestore-storage.js';
 
 // ============================================
+// VALIDATION FUNCTIONS
+// ============================================
+
+/**
+ * Validates email format
+ * @param {string} email - Email to validate
+ * @returns {string|null} Error message or null if valid
+ */
+export function validateEmail(email) {
+    if (!email || email.trim().length === 0) {
+        return 'E-postadresse er påkrevd';
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return 'Ugyldig e-postadresse';
+    }
+
+    return null;
+}
+
+/**
+ * Validates password strength
+ * @param {string} password - Password to validate
+ * @returns {string[]} Array of error messages (empty if valid)
+ */
+export function validatePassword(password) {
+    const errors = [];
+
+    if (!password || password.length === 0) {
+        errors.push('Passord er påkrevd');
+        return errors;
+    }
+
+    if (password.length < 8) {
+        errors.push('Passordet må være minst 8 tegn');
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        errors.push('Passordet må inneholde minst én stor bokstav');
+    }
+
+    if (!/[a-z]/.test(password)) {
+        errors.push('Passordet må inneholde minst én liten bokstav');
+    }
+
+    if (!/[0-9]/.test(password)) {
+        errors.push('Passordet må inneholde minst ett tall');
+    }
+
+    return errors;
+}
+
+// ============================================
 // REGISTRATION
 // ============================================
 export async function handleRegister(e) {
@@ -18,17 +72,27 @@ export async function handleRegister(e) {
     const name = document.getElementById('registerName')?.value;
     const homeTeam = document.getElementById('registerHomeTeam')?.value;
 
-    // Validation
+    // Basic validation
     if (!email || !password || !name) {
         alert('Vennligst fyll ut alle feltene');
         return false;
     }
 
-    if (password.length < 6) {
-        alert('Passordet må være minst 6 tegn');
+    // Email validation
+    const emailError = validateEmail(email);
+    if (emailError) {
+        alert(emailError);
         return false;
     }
 
+    // Password validation
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+        alert('Passordet oppfyller ikke kravene:\n\n' + passwordErrors.map(e => '• ' + e).join('\n'));
+        return false;
+    }
+
+    // Confirm password match
     if (password !== confirmPassword) {
         alert('Passordene matcher ikke');
         return false;

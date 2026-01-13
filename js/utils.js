@@ -20,6 +20,15 @@ export function handlePlayersFileUpload(event, updatePlayersManagementModal, sho
     const file = event.target.files[0];
     if (!file) return;
 
+    // Race Condition Fix: Block parallel file imports
+    if (APP.isImportingFile) {
+        alert('Vennligst vent til forrige filimport er fullført.');
+        event.target.value = ''; // Reset input
+        return;
+    }
+
+    APP.isImportingFile = true;
+
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
@@ -53,8 +62,17 @@ export function handlePlayersFileUpload(event, updatePlayersManagementModal, sho
             }
         } catch (error) {
             alert('Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\nFormat JSON: [{"id":1,"name":"Navn","number":1,"isKeeper":false}]\nFormat CSV/TXT: nummer,navn,isKeeper');
+        } finally {
+            // Always release lock, even on error
+            APP.isImportingFile = false;
         }
     };
+
+    reader.onerror = () => {
+        alert('Feil ved lesing av fil. Vennligst prøv igjen.');
+        APP.isImportingFile = false;
+    };
+
     reader.readAsText(file);
     event.target.value = ''; // Reset input
 }
@@ -62,6 +80,15 @@ export function handlePlayersFileUpload(event, updatePlayersManagementModal, sho
 export function handleOpponentsFileUpload(event, updatePlayersManagementModal, showModal) {
     const file = event.target.files[0];
     if (!file) return;
+
+    // Race Condition Fix: Block parallel file imports
+    if (APP.isImportingFile) {
+        alert('Vennligst vent til forrige filimport er fullført.');
+        event.target.value = ''; // Reset input
+        return;
+    }
+
+    APP.isImportingFile = true;
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -93,8 +120,17 @@ export function handleOpponentsFileUpload(event, updatePlayersManagementModal, s
             }
         } catch (error) {
             alert('Feil ved lasting av fil. Sjekk formatet og prøv igjen.\n\nFormat JSON: [{"id":1,"name":"Navn","number":1}]\nFormat CSV/TXT: nummer,navn');
+        } finally {
+            // Always release lock, even on error
+            APP.isImportingFile = false;
         }
     };
+
+    reader.onerror = () => {
+        alert('Feil ved lesing av fil. Vennligst prøv igjen.');
+        APP.isImportingFile = false;
+    };
+
     reader.readAsText(file);
     event.target.value = ''; // Reset input
 }
