@@ -43,7 +43,7 @@ export async function logShotEvent(eventData) {
                 id: eventData.player.id,
                 name: eventData.player.name,
                 number: eventData.player.number,
-                isKeeper: eventData.player.isKeeper
+                isKeeper: eventData.player.isKeeper || false
             } : null,
 
             // Keeper information (for defense mode)
