@@ -50,12 +50,8 @@ service cloud.firestore {
       // ============================================
 
       match /debug_logs/{logId} {
-        // Any authenticated user can write debug logs
-        allow create: if isOwner(userId);
-
-        // Only admin can read debug logs (currently disabled)
-        // TODO: Enable admin read access when admin feature is implemented
-        allow read: if isAdmin();
+        // Users can read and create their own debug logs
+        allow read, create: if isOwner(userId);
 
         // Never allow updates or deletes (logs are immutable)
         allow update, delete: if false;
