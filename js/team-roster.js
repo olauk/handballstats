@@ -198,6 +198,15 @@ export function handleRosterPlayersFileUpload(event, updateModal) {
     const file = event.target.files[0];
     if (!file) return;
 
+    // Race Condition Fix: Block parallel file imports
+    if (APP.isImportingFile) {
+        alert('Vennligst vent til forrige filimport er fullført.');
+        event.target.value = ''; // Reset input
+        return;
+    }
+
+    APP.isImportingFile = true;
+
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
@@ -265,8 +274,17 @@ export function handleRosterPlayersFileUpload(event, updateModal) {
                 '1,Ola Nordmann,false\n' +
                 '12,Keeper Hansen,true'
             );
+        } finally {
+            // Always release lock, even on error
+            APP.isImportingFile = false;
         }
     };
+
+    reader.onerror = () => {
+        alert('Feil ved lesing av fil. Vennligst prøv igjen.');
+        APP.isImportingFile = false;
+    };
+
     reader.readAsText(file);
     event.target.value = ''; // Reset input
 }
