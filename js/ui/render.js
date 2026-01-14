@@ -161,12 +161,12 @@ function renderRegisterPage() {
 
                     <div style="margin-top: 1rem;">
                         <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
-                            Passord * (min 6 tegn)
+                            Passord * (min 8 tegn)
                         </label>
                         <input
                             type="password"
                             id="registerPassword"
-                            placeholder="Minst 6 tegn"
+                            placeholder="Minst 8 tegn"
                             required
                             autocomplete="new-password"
                             minlength="6"
