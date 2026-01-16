@@ -5,6 +5,7 @@ import { APP, getCurrentEvents, getCurrentPlayers, getCurrentOpponents } from '.
 import { renderShotPopupContent, renderTechnicalPopupContent } from '../shots.js';
 import { renderPlayersManagementPopupContent } from '../players.js';
 import { renderTeamRosterEditModalContent } from './team-roster.js';
+import { handleRosterPlayersFileUpload } from '../team-roster.js';
 
 export function showModal(modalId) {
     setTimeout(() => {
@@ -210,6 +211,20 @@ export function updateTeamRosterEditModal() {
     const modalContent = modal.querySelector('.modal-content');
     if (modalContent) {
         modalContent.innerHTML = renderTeamRosterEditModalContent();
+
+        // Re-attach file input event listener after modal content is updated
+        // This is necessary because the file input is inside the modal and gets re-rendered
+        const rosterPlayersFileInput = document.getElementById('rosterPlayersFileInput');
+        if (rosterPlayersFileInput) {
+            // Remove any existing listeners by cloning and replacing the node
+            const newFileInput = rosterPlayersFileInput.cloneNode(true);
+            rosterPlayersFileInput.parentNode.replaceChild(newFileInput, rosterPlayersFileInput);
+
+            // Attach fresh event listener
+            newFileInput.addEventListener('change', (e) => {
+                handleRosterPlayersFileUpload(e, updateTeamRosterEditModal);
+            });
+        }
     }
 }
 

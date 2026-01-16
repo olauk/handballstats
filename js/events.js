@@ -56,8 +56,8 @@ import {
     removePlayerFromRoster,
     cancelRosterPlayerEdit,
     importTeamRosterToSetup,
-    loadRosterPlayersFile,
-    handleRosterPlayersFileUpload
+    loadRosterPlayersFile
+    // handleRosterPlayersFileUpload is now imported and used in modals.js
 } from './team-roster.js';
 import { renderStatistics } from './ui/match.js';
 import { exportDebugLogs } from './debug-logger.js';
@@ -467,11 +467,8 @@ export function attachEventListeners(render) {
             handleOpponentsFileUpload(e, updatePlayersManagementModal, showModal));
     }
 
-    const rosterPlayersFileInput = document.getElementById('rosterPlayersFileInput');
-    if (rosterPlayersFileInput) {
-        rosterPlayersFileInput.addEventListener('change', (e) =>
-            handleRosterPlayersFileUpload(e, updateTeamRosterEditModal));
-    }
+    // Note: rosterPlayersFileInput event listener is attached in updateTeamRosterEditModal()
+    // because the file input is inside a modal and doesn't exist in DOM at app startup
 
     // Keeper select
     const keeperSelect = document.getElementById('keeperSelect');
