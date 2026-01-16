@@ -321,7 +321,11 @@ export async function handlePasswordReset(e) {
 // START NEW MATCH
 // ============================================
 export function startNewMatch() {
-    // Nullstill spillerdata, men behold kamphistorikk
+    console.log('🔄 Starting new match - resetting all match data...');
+
+    // ============================================
+    // RESET CORE MATCH DATA
+    // ============================================
     APP.players = [];
     APP.opponents = [];
     APP.homeTeam = APP.currentUser?.homeTeam || 'Eget lag';
@@ -331,14 +335,65 @@ export function startNewMatch() {
     APP.currentHalf = 1;
     APP.activeKeeper = null;
     APP.mode = 'attack';
+
+    // ============================================
+    // RESET SHOT/MODAL STATE
+    // ============================================
     APP.tempShot = null;
     APP.selectedResult = null;
+    APP.showShotDetails = false;
+    APP.shotDetailsData = null;
 
-    // Invalider cache
+    // ============================================
+    // RESET PLAYER MANAGEMENT STATE
+    // ============================================
+    APP.managingTeam = null;
+    APP.tempPlayersList = [];
+    APP.editingPlayerId = null;
+
+    // ============================================
+    // RESET TEAM ROSTER STATE
+    // ============================================
+    APP.editingTeamId = null;
+    APP.importingTeamId = null;
+    APP.viewingMatch = null;
+
+    // ============================================
+    // RESET TIMER STATE (CRITICAL!)
+    // ============================================
+    // Stop timer if it's running
+    if (APP.timerState.intervalId) {
+        clearInterval(APP.timerState.intervalId);
+    }
+    APP.timerState.isRunning = false;
+    APP.timerState.currentTime = 0;
+    APP.timerState.intervalId = null;
+
+    // Reset timer config to default
+    APP.timerConfig.halfLength = 30;
+
+    // ============================================
+    // RESET MATCH MODE TO SIMPLE
+    // ============================================
+    APP.matchMode = 'simple';
+
+    // ============================================
+    // RESET LOCKS
+    // ============================================
+    APP.isImportingFile = false;
+
+    // ============================================
+    // INVALIDATE CACHE
+    // ============================================
     PERFORMANCE.invalidateStatsCache();
 
+    // ============================================
+    // NAVIGATE TO SETUP PAGE
+    // ============================================
     APP.page = 'setup';
     saveToLocalStorageImmediate();
+
+    console.log('✅ Match data reset complete - ready for new match');
 }
 
 // ============================================
