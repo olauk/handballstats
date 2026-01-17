@@ -16,6 +16,7 @@ import {
 import {
     handleGoalClick,
     selectShotResult,
+    selectShooter,
     selectAttackType,
     selectShotPosition,
     selectAssist,
@@ -189,6 +190,9 @@ export function setupGlobalEventListeners(render) {
             case 'selectResult':
                 selectShotResult(button.dataset.result, attachModalEventListeners);
                 break;
+            case 'selectShooter':
+                selectShooter(parseInt(button.dataset.playerId), attachModalEventListeners);
+                break;
             case 'selectAttackType':
                 selectAttackType(button.dataset.type, attachModalEventListeners);
                 break;
@@ -205,10 +209,16 @@ export function setupGlobalEventListeners(render) {
                 registerShot(parseInt(button.dataset.playerId), closeModal,
                     updateGoalVisualization, () => updateStatisticsOnly(renderStatistics, () => {}));
                 break;
+            case 'registerShotFinal':
+                // For detailed mode - register using selectedShooter (no playerId needed)
+                registerShot(null, closeModal,
+                    updateGoalVisualization, () => updateStatisticsOnly(renderStatistics, () => {}));
+                break;
             case 'closeShotPopup':
                 closeModal('shotPopup');
                 APP.tempShot = null;
                 APP.selectedResult = null;
+                APP.selectedShooter = null;
                 APP.selectedAttackType = null;
                 APP.selectedShotPosition = null;
                 APP.selectedAssist = null;
