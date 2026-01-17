@@ -380,9 +380,9 @@ export function startNewMatch() {
     APP.timerConfig.halfLength = 30;
 
     // ============================================
-    // RESET MATCH MODE TO SIMPLE
+    // KEEP MATCH MODE (user selected on home page)
     // ============================================
-    APP.matchMode = 'simple';
+    // matchMode is NOT reset - user has already selected mode on home page
 
     // ============================================
     // RESET LOCKS
@@ -401,6 +401,19 @@ export function startNewMatch() {
     saveToLocalStorageImmediate();
 
     console.log('✅ Match data reset complete - ready for new match');
+}
+
+// ============================================
+// CONTINUE MATCH SETUP (without resetting data)
+// ============================================
+export function continueMatchSetup() {
+    console.log('📝 Continuing match setup - keeping existing data...');
+
+    // Navigate to setup page without resetting any data
+    APP.page = 'setup';
+    saveToLocalStorage();
+
+    console.log('✅ Navigated to setup page with existing data');
 }
 
 // ============================================
