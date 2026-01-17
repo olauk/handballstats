@@ -107,47 +107,41 @@ export function selectAttackType(type, attachModalEventListeners) {
     }
 }
 
-export function selectShotPosition(position, attachModalEventListeners) {
+export function selectShotPosition(position, closeModal, updateGoalVisualization, updateStatisticsOnly, attachModalEventListeners) {
     APP.selectedShotPosition = position;
 
-    // Update modal content to show next step
-    const shotPopup = document.getElementById('shotPopup');
-    if (shotPopup) {
-        const modalContent = shotPopup.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.innerHTML = renderShotPopupContent();
-            attachModalEventListeners();
+    // Check if we need to show assist selection
+    const needsAssist = APP.mode === 'attack' && APP.selectedResult === 'mål';
+
+    if (needsAssist) {
+        // Show assist selection
+        const shotPopup = document.getElementById('shotPopup');
+        if (shotPopup) {
+            const modalContent = shotPopup.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.innerHTML = renderShotPopupContent();
+                attachModalEventListeners();
+            }
         }
+    } else {
+        // No assist needed (defense mode or save) - register directly
+        registerShot(null, closeModal, updateGoalVisualization, updateStatisticsOnly);
     }
 }
 
-export function selectAssist(playerId, attachModalEventListeners) {
+export function selectAssist(playerId, closeModal, updateGoalVisualization, updateStatisticsOnly) {
     APP.selectedAssist = playerId;
 
-    // Update modal content to show next step
-    const shotPopup = document.getElementById('shotPopup');
-    if (shotPopup) {
-        const modalContent = shotPopup.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.innerHTML = renderShotPopupContent();
-            attachModalEventListeners();
-        }
-    }
+    // Register shot directly - no need for final confirmation
+    registerShot(null, closeModal, updateGoalVisualization, updateStatisticsOnly);
 }
 
-export function skipAssist(attachModalEventListeners) {
+export function skipAssist(closeModal, updateGoalVisualization, updateStatisticsOnly) {
     // Set to empty string to indicate "skipped" - different from null which means "not yet selected"
     APP.selectedAssist = '';
 
-    // Update modal content to show player selection
-    const shotPopup = document.getElementById('shotPopup');
-    if (shotPopup) {
-        const modalContent = shotPopup.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.innerHTML = renderShotPopupContent();
-            attachModalEventListeners();
-        }
-    }
+    // Register shot directly - no need for final confirmation
+    registerShot(null, closeModal, updateGoalVisualization, updateStatisticsOnly);
 }
 
 // Separate function for modal content only
@@ -165,7 +159,6 @@ export function renderShotPopupContent() {
     const needsAttackType = isDetailedMode && APP.selectedShooter && !APP.selectedAttackType;
     const needsShotPosition = isDetailedMode && APP.selectedShooter && APP.selectedAttackType && !APP.selectedShotPosition;
     const needsAssist = isDetailedMode && APP.mode === 'attack' && APP.selectedResult === 'mål' && APP.selectedShooter && APP.selectedAttackType && APP.selectedShotPosition && !APP.selectedAssist;
-    const readyToRegister = APP.selectedShooter && (!isDetailedMode || (APP.selectedAttackType && APP.selectedShotPosition && (APP.selectedAssist || APP.selectedResult !== 'mål' || APP.mode !== 'attack')));
 
     // Build summary of selections for detailed mode
     let selectionSummary = '';
@@ -202,8 +195,6 @@ export function renderShotPopupContent() {
         currentStep = `Steg 4: Velg skuddposisjon`;
     } else if (needsAssist) {
         currentStep = `Steg 5 (valgfritt): Velg assist, eller fortsett uten assist`;
-    } else if (readyToRegister) {
-        currentStep = `Klar til å registrere skudd`;
     }
 
     return `
@@ -296,13 +287,6 @@ export function renderShotPopupContent() {
                         </button>
                     `).join('')}
                 </div>
-            </div>
-        ` : readyToRegister ? `
-            <div>
-                <button class="btn btn-success" data-action="registerShotFinal"
-                        style="width: 100%; padding: 1.5rem; font-size: 1.25rem; font-weight: 700;">
-                    ✅ Registrer skudd
-                </button>
             </div>
         ` : ''}
     `;
