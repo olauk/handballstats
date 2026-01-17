@@ -66,11 +66,18 @@ export function renderHomePage() {
                 </div>
 
                 <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn btn-primary btn-lg"
-                            data-action="startWithMode"
-                            style="padding: 0.5rem 1rem; font-size: 1.125rem;">
-                        ▶ Start kamp
+                    <button class="btn btn-success btn-lg"
+                            data-action="startNewMatch"
+                            style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 700;">
+                        ▶ Start ny kamp
                     </button>
+                    ${APP.players.length > 0 || APP.opponents.length > 0 || APP.events.length > 0 ? `
+                        <button class="btn btn-primary btn-lg"
+                                data-action="continueMatchSetup"
+                                style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 700;">
+                            📝 Fortsett oppsett av kamp
+                        </button>
+                    ` : ''}
                     <button class="btn btn-blue btn-lg"
                             data-action="manageTeamRosters"
                             style="padding: 0.5rem 1rem; font-size: 1.125rem;">

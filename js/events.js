@@ -3,7 +3,7 @@
 // ============================================
 import { APP } from './state.js';
 import { saveToLocalStorage } from './storage.js';
-import { handleLogin, handleLogout, handleRegister, handlePasswordReset, startNewMatch } from './auth.js';
+import { handleLogin, handleLogout, handleRegister, handlePasswordReset, startNewMatch, continueMatchSetup } from './auth.js';
 import {
     openPlayersManagement,
     openOpponentsManagement,
@@ -89,6 +89,10 @@ export function setupGlobalEventListeners(render) {
                 break;
             case 'startNewMatch':
                 startNewMatch();
+                render();
+                break;
+            case 'continueMatchSetup':
+                continueMatchSetup();
                 render();
                 break;
             case 'managePlayers':
