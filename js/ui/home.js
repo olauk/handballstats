@@ -44,9 +44,9 @@ export function renderHomePage() {
                          data-action="selectMode"
                          data-mode="advanced"
                          style="cursor: pointer; border: 3px solid ${APP.matchMode === 'advanced' ? '#3b82f6' : '#e5e7eb'}; border-radius: 12px; padding: 2rem; background: ${APP.matchMode === 'advanced' ? '#eff6ff' : 'white'}; transition: all 0.2s; position: relative;">
-                        <div style="position: absolute; top: 1rem; right: 1rem; background: #f59e0b; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
+                        <!-- <div style="position: absolute; top: 1rem; right: 1rem; background: #f59e0b; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
                             BETA
-                        </div>
+                        </div> -->
                         <div style="text-align: center;">
                             <div style="font-size: 3rem; margin-bottom: 1rem;">⏱️</div>
                             <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
