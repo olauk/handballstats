@@ -242,6 +242,15 @@ export function renderStatistics() {
                                 <th class="text-center" style="font-weight: 700;">Tot. Mål</th>
                                 <th class="text-center" style="font-weight: 700;">Tot. Skudd</th>
                                 <th class="text-center" style="font-weight: 700;">Uttelling %</th>
+                                ${APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed' ? `
+                                    <th class="text-center" style="background: #eff6ff; font-size: 0.875rem;">Etablert</th>
+                                    <th class="text-center" style="background: #eff6ff; font-size: 0.875rem;">Kontring</th>
+                                    <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">9m</th>
+                                    <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">6m</th>
+                                    <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">7m</th>
+                                    <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">KA</th>
+                                    <th class="text-center" style="background: #d1fae5; font-size: 0.875rem;">Assists</th>
+                                ` : ''}
                                 <th class="text-center">Detaljer</th>
                             </tr>
                         </thead>
@@ -252,6 +261,30 @@ export function renderStatistics() {
                                 const total = getPlayerStats(player.id);
                                 const totalShots = total.goals + total.saved + total.outside;
                                 const shootingPercent = totalShots > 0 ? ((total.goals / totalShots) * 100).toFixed(1) : 0;
+
+                                // Advanced statistics (only in detailed mode)
+                                let advancedStats = '';
+                                if (APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed') {
+                                    const playerEvents = events.filter(e => e.mode === 'attack' && e.player?.id === player.id);
+                                    const etablert = playerEvents.filter(e => e.attackType === 'etablert').length;
+                                    const kontring = playerEvents.filter(e => e.attackType === 'kontring').length;
+                                    const pos9m = playerEvents.filter(e => e.shotPosition === '9m').length;
+                                    const pos6m = playerEvents.filter(e => e.shotPosition === '6m').length;
+                                    const pos7m = playerEvents.filter(e => e.shotPosition === '7m').length;
+                                    const posKa = playerEvents.filter(e => e.shotPosition === 'ka').length;
+                                    const assists = events.filter(e => e.mode === 'attack' && e.assist?.id === player.id).length;
+
+                                    advancedStats = `
+                                        <td class="text-center" style="background: #eff6ff; font-size: 0.875rem;">${etablert}</td>
+                                        <td class="text-center" style="background: #eff6ff; font-size: 0.875rem;">${kontring}</td>
+                                        <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${pos9m}</td>
+                                        <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${pos6m}</td>
+                                        <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${pos7m}</td>
+                                        <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${posKa}</td>
+                                        <td class="text-center" style="background: #d1fae5; font-size: 0.875rem;">${assists}</td>
+                                    `;
+                                }
+
                                 return `
                                     <tr>
                                         <td>${player.number}</td>
@@ -267,6 +300,7 @@ export function renderStatistics() {
                                         <td class="text-center" style="font-weight: 700; color: #059669;">${total.goals}</td>
                                         <td class="text-center" style="font-weight: 700;">${totalShots}</td>
                                         <td class="text-center" style="font-weight: 700; color: #2563eb;">${shootingPercent}%</td>
+                                        ${advancedStats}
                                         <td class="text-center">
                                             <button class="btn btn-primary"
                                                     data-action="showPlayerDetails" data-player-id="${player.id}"
@@ -314,19 +348,43 @@ export function renderStatistics() {
             const total = getOpponentStats(opponent.id);
             const totalShots = total.shots.length;
             const shootingPercent = totalShots > 0 ? ((total.goals / totalShots) * 100).toFixed(1) : 0;
+
+            // Advanced statistics (only in detailed mode)
+            let advancedStats = '';
+            if (APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed') {
+                const opponentEvents = events.filter(e => e.mode === 'defense' && e.opponent?.id === opponent.id);
+                const etablert = opponentEvents.filter(e => e.attackType === 'etablert').length;
+                const kontring = opponentEvents.filter(e => e.attackType === 'kontring').length;
+                const pos9m = opponentEvents.filter(e => e.shotPosition === '9m').length;
+                const pos6m = opponentEvents.filter(e => e.shotPosition === '6m').length;
+                const pos7m = opponentEvents.filter(e => e.shotPosition === '7m').length;
+                const posKa = opponentEvents.filter(e => e.shotPosition === 'ka').length;
+
+                advancedStats = `
+                    <td class="text-center" style="background: #eff6ff; font-size: 0.875rem;">${etablert}</td>
+                    <td class="text-center" style="background: #eff6ff; font-size: 0.875rem;">${kontring}</td>
+                    <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${pos9m}</td>
+                    <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${pos6m}</td>
+                    <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${pos7m}</td>
+                    <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${posKa}</td>
+                `;
+            }
+
             return {
                 opponent,
                 totalShots,
                 goals: total.goals,
-                shootingPercent: parseFloat(shootingPercent)
+                shootingPercent: parseFloat(shootingPercent),
+                advancedStats
             };
-        }).sort((a, b) => b.goals - a.goals).map(({ opponent, totalShots, goals, shootingPercent }) => `
+        }).sort((a, b) => b.goals - a.goals).map(({ opponent, totalShots, goals, shootingPercent, advancedStats }) => `
             <tr>
                 <td>${opponent.number}</td>
                 <td style="font-weight: 600;">${opponent.name}</td>
                 <td class="text-center">${totalShots}</td>
                 <td class="text-center" style="font-weight: 700; color: #dc2626;">${goals}</td>
                 <td class="text-center" style="font-weight: 700; color: #ea580c;">${shootingPercent}%</td>
+                ${advancedStats}
                 <td class="text-center">
                     <button class="btn btn-orange"
                             data-action="showOpponentDetails" data-opponent-id="${opponent.id}"
@@ -387,6 +445,14 @@ export function renderStatistics() {
                                     <th class="text-center">Avfyrte skudd</th>
                                     <th class="text-center">Mål</th>
                                     <th class="text-center" style="font-weight: 700;">Uttelling %</th>
+                                    ${APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed' ? `
+                                        <th class="text-center" style="background: #eff6ff; font-size: 0.875rem;">Etablert</th>
+                                        <th class="text-center" style="background: #eff6ff; font-size: 0.875rem;">Kontring</th>
+                                        <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">9m</th>
+                                        <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">6m</th>
+                                        <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">7m</th>
+                                        <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">KA</th>
+                                    ` : ''}
                                     <th class="text-center">Detaljer</th>
                                 </tr>
                             </thead>

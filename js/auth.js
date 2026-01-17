@@ -344,6 +344,12 @@ export function startNewMatch() {
     APP.showShotDetails = false;
     APP.shotDetailsData = null;
 
+    // Reset advanced shot registration fields
+    APP.shotRegistrationMode = 'simple';
+    APP.selectedAttackType = null;
+    APP.selectedShotPosition = null;
+    APP.selectedAssist = null;
+
     // ============================================
     // RESET PLAYER MANAGEMENT STATE
     // ============================================

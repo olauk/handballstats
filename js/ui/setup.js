@@ -95,6 +95,41 @@ export function renderSetupPage() {
                     </div>
                 ` : ''}
 
+                ${APP.matchMode === 'advanced' ? `
+                    <div class="mb-6" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 1.5rem; border-radius: 12px;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                            <h2 style="font-size: 1.5rem; font-weight: 700; color: white; margin: 0;">
+                                📊 Skuddregistrering
+                            </h2>
+                            <span style="background: rgba(255, 255, 255, 0.2); color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
+                                AVANSERT
+                            </span>
+                        </div>
+                        <p style="color: rgba(255, 255, 255, 0.9); margin-bottom: 1.5rem; font-size: 0.875rem;">
+                            Velg mellom enkel eller detaljert skuddregistrering. Detaljert modus gir deg mulighet til å registrere angrepstype, skuddposisjon og assist.
+                        </p>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: white;">
+                            Registreringsmodus
+                        </label>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+                            <button type="button"
+                                    class="btn ${APP.shotRegistrationMode === 'simple' ? 'btn-primary' : ''}"
+                                    data-action="setShotRegistrationMode"
+                                    data-mode="simple"
+                                    style="padding: 1rem; font-size: 1.25rem; font-weight: 700; background: ${APP.shotRegistrationMode === 'simple' ? '#10b981' : 'white'}; color: ${APP.shotRegistrationMode === 'simple' ? 'white' : '#312e81'}; border: 3px solid ${APP.shotRegistrationMode === 'simple' ? '#10b981' : '#e5e7eb'};">
+                                Enkel
+                            </button>
+                            <button type="button"
+                                    class="btn ${APP.shotRegistrationMode === 'detailed' ? 'btn-primary' : ''}"
+                                    data-action="setShotRegistrationMode"
+                                    data-mode="detailed"
+                                    style="padding: 1rem; font-size: 1.25rem; font-weight: 700; background: ${APP.shotRegistrationMode === 'detailed' ? '#10b981' : 'white'}; color: ${APP.shotRegistrationMode === 'detailed' ? 'white' : '#312e81'}; border: 3px solid ${APP.shotRegistrationMode === 'detailed' ? '#10b981' : '#e5e7eb'};">
+                                Detaljert
+                            </button>
+                        </div>
+                    </div>
+                ` : ''}
+
                 <div class="mb-6">
                     <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
                         ${APP.homeTeam} - Spillere

@@ -16,6 +16,11 @@ export const APP = {
     events: [],
     tempShot: null,
     selectedResult: null,
+    // Advanced shot registration (only in advanced mode + detailed shot registration)
+    shotRegistrationMode: 'simple', // 'simple' or 'detailed'
+    selectedAttackType: null, // 'etablert' or 'kontring'
+    selectedShotPosition: null, // '9m', '6m', '7m', 'ka'
+    selectedAssist: null, // Player ID who made the assist (optional, only for goals)
     showShotDetails: false,
     shotDetailsData: null,
     completedMatches: [], // Array of completed matches
