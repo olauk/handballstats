@@ -197,21 +197,19 @@ export function setupGlobalEventListeners(render) {
                 selectAttackType(button.dataset.type, attachModalEventListeners);
                 break;
             case 'selectShotPosition':
-                selectShotPosition(button.dataset.position, attachModalEventListeners);
+                selectShotPosition(button.dataset.position, closeModal,
+                    updateGoalVisualization, () => updateStatisticsOnly(renderStatistics, () => {}), attachModalEventListeners);
                 break;
             case 'selectAssist':
-                selectAssist(parseInt(button.dataset.playerId), attachModalEventListeners);
+                selectAssist(parseInt(button.dataset.playerId), closeModal,
+                    updateGoalVisualization, () => updateStatisticsOnly(renderStatistics, () => {}));
                 break;
             case 'skipAssist':
-                skipAssist(attachModalEventListeners);
+                skipAssist(closeModal,
+                    updateGoalVisualization, () => updateStatisticsOnly(renderStatistics, () => {}));
                 break;
             case 'registerShot':
                 registerShot(parseInt(button.dataset.playerId), closeModal,
-                    updateGoalVisualization, () => updateStatisticsOnly(renderStatistics, () => {}));
-                break;
-            case 'registerShotFinal':
-                // For detailed mode - register using selectedShooter (no playerId needed)
-                registerShot(null, closeModal,
                     updateGoalVisualization, () => updateStatisticsOnly(renderStatistics, () => {}));
                 break;
             case 'closeShotPopup':
