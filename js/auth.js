@@ -346,6 +346,7 @@ export function startNewMatch() {
 
     // Reset advanced shot registration fields
     APP.shotRegistrationMode = 'simple';
+    APP.selectedShooter = null;
     APP.selectedAttackType = null;
     APP.selectedShotPosition = null;
     APP.selectedAssist = null;

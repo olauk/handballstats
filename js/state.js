@@ -18,6 +18,7 @@ export const APP = {
     selectedResult: null,
     // Advanced shot registration (only in advanced mode + detailed shot registration)
     shotRegistrationMode: 'simple', // 'simple' or 'detailed'
+    selectedShooter: null, // Player ID who took the shot (selected before attack type/position in detailed mode)
     selectedAttackType: null, // 'etablert' or 'kontring'
     selectedShotPosition: null, // '9m', '6m', '7m', 'ka'
     selectedAssist: null, // Player ID who made the assist (optional, only for goals)

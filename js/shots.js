@@ -79,6 +79,20 @@ export function selectShotResult(result, attachModalEventListeners) {
     }
 }
 
+export function selectShooter(playerId, attachModalEventListeners) {
+    APP.selectedShooter = playerId;
+
+    // Update modal content to show next step
+    const shotPopup = document.getElementById('shotPopup');
+    if (shotPopup) {
+        const modalContent = shotPopup.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.innerHTML = renderShotPopupContent();
+            attachModalEventListeners();
+        }
+    }
+}
+
 export function selectAttackType(type, attachModalEventListeners) {
     APP.selectedAttackType = type;
 
@@ -139,23 +153,29 @@ export function skipAssist(attachModalEventListeners) {
 // Separate function for modal content only
 export function renderShotPopupContent() {
     const isOutside = APP.tempShot?.zone === 'outside';
-    const needsResult = !isOutside && !APP.selectedResult;
     const playersList = APP.mode === 'attack' ? APP.players : APP.opponents;
 
     // Check if we're in detailed shot registration mode
     const isDetailedMode = APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed';
 
-    // Progressive disclosure steps for detailed mode
-    const needsAttackType = isDetailedMode && !isOutside && APP.selectedResult && !APP.selectedAttackType;
-    const needsShotPosition = isDetailedMode && !isOutside && APP.selectedResult && APP.selectedAttackType && !APP.selectedShotPosition;
-    const canShowAssist = isDetailedMode && APP.mode === 'attack' && APP.selectedResult === 'mål' && APP.selectedAttackType && APP.selectedShotPosition;
-    const canShowPlayerSelection = (APP.selectedResult || isOutside) && (!isDetailedMode || (APP.selectedAttackType && APP.selectedShotPosition));
+    // Progressive disclosure steps - ONLY ONE STEP SHOWN AT A TIME
+    // New order: Result → Shooter → Attack Type → Shot Position → Assist
+    const needsResult = !isOutside && !APP.selectedResult;
+    const needsShooter = (APP.selectedResult || isOutside) && !APP.selectedShooter;
+    const needsAttackType = isDetailedMode && APP.selectedShooter && !APP.selectedAttackType;
+    const needsShotPosition = isDetailedMode && APP.selectedShooter && APP.selectedAttackType && !APP.selectedShotPosition;
+    const needsAssist = isDetailedMode && APP.mode === 'attack' && APP.selectedResult === 'mål' && APP.selectedShooter && APP.selectedAttackType && APP.selectedShotPosition && !APP.selectedAssist;
+    const readyToRegister = APP.selectedShooter && (!isDetailedMode || (APP.selectedAttackType && APP.selectedShotPosition && (APP.selectedAssist || APP.selectedResult !== 'mål' || APP.mode !== 'attack')));
 
     // Build summary of selections for detailed mode
     let selectionSummary = '';
-    if (isDetailedMode && (APP.selectedResult || APP.selectedAttackType || APP.selectedShotPosition || APP.selectedAssist)) {
+    if (APP.selectedResult || APP.selectedShooter || APP.selectedAttackType || APP.selectedShotPosition || APP.selectedAssist) {
         const parts = [];
         if (APP.selectedResult) parts.push(`Resultat: ${APP.selectedResult === 'mål' ? '⚽ Mål' : '🧤 Redning'}`);
+        if (APP.selectedShooter) {
+            const shooter = playersList.find(p => p.id === APP.selectedShooter);
+            parts.push(`Skytter: #${shooter?.number} ${shooter?.name}`);
+        }
         if (APP.selectedAttackType) parts.push(`Angrep: ${APP.selectedAttackType === 'etablert' ? '🏃 Etablert' : '⚡ Kontring'}`);
         if (APP.selectedShotPosition) {
             const posLabels = { '9m': '9m', '6m': '6m', '7m': '7m', 'ka': 'KA' };
@@ -166,6 +186,24 @@ export function renderShotPopupContent() {
             parts.push(`Assist: #${assistPlayer?.number} ${assistPlayer?.name}`);
         }
         selectionSummary = `<p style="color: #4b5563; font-size: 0.875rem; margin-bottom: 1rem; padding: 0.75rem; background: #f3f4f6; border-radius: 0.5rem;">${parts.join(' • ')}</p>`;
+    }
+
+    // Determine current step for UI
+    let currentStep = '';
+    let stepNumber = 1;
+    if (needsResult) {
+        currentStep = `Steg ${stepNumber}: Velg resultat av skuddet`;
+    } else if (needsShooter) {
+        stepNumber = isOutside ? 1 : 2;
+        currentStep = `Steg ${stepNumber}: Velg spiller som avfyrte skuddet`;
+    } else if (needsAttackType) {
+        currentStep = `Steg 3: Velg angrepstype`;
+    } else if (needsShotPosition) {
+        currentStep = `Steg 4: Velg skuddposisjon`;
+    } else if (needsAssist) {
+        currentStep = `Steg 5 (valgfritt): Velg assist, eller fortsett uten assist`;
+    } else if (readyToRegister) {
+        currentStep = `Klar til å registrere skudd`;
     }
 
     return `
@@ -181,23 +219,12 @@ export function renderShotPopupContent() {
 
         ${selectionSummary}
 
-        <p style="color: #4b5563; margin-bottom: 1.5rem;">
-            ${isOutside
-                ? 'Skudd utenfor mål - velg spiller'
-                : needsResult
-                    ? 'Steg 1: Velg resultat av skuddet'
-                    : needsAttackType
-                        ? 'Steg 2: Velg angrepstype'
-                        : needsShotPosition
-                            ? 'Steg 3: Velg skuddposisjon'
-                            : canShowAssist && !APP.selectedAssist
-                                ? 'Steg 4 (valgfritt): Velg assist, eller fortsett uten assist'
-                                : 'Steg ${isDetailedMode ? (canShowAssist ? "5" : "4") : "2"}: Velg spiller som avfyrte skuddet'}
+        <p style="color: #4b5563; margin-bottom: 1.5rem; font-weight: 600;">
+            ${currentStep}
         </p>
 
         ${needsResult ? `
-            <div class="mb-6">
-                <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">Velg resultat:</h3>
+            <div>
                 <div class="grid-2">
                     <button class="btn btn-success" data-action="selectResult" data-result="mål"
                             style="padding: 1rem; font-size: 1.125rem;">
@@ -209,11 +236,19 @@ export function renderShotPopupContent() {
                     </button>
                 </div>
             </div>
-        ` : ''}
-
-        ${needsAttackType ? `
-            <div class="mb-6">
-                <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">Velg angrepstype:</h3>
+        ` : needsShooter ? `
+            <div>
+                <div class="player-grid">
+                    ${playersList.map(player => `
+                        <button class="player-button" data-action="selectShooter" data-player-id="${player.id}">
+                            <span class="player-number">${player.number}</span>
+                            <span class="player-name">${player.name}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        ` : needsAttackType ? `
+            <div>
                 <div class="grid-2">
                     <button class="btn btn-blue" data-action="selectAttackType" data-type="etablert"
                             style="padding: 1rem; font-size: 1.125rem;">
@@ -225,11 +260,8 @@ export function renderShotPopupContent() {
                     </button>
                 </div>
             </div>
-        ` : ''}
-
-        ${needsShotPosition ? `
-            <div class="mb-6">
-                <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">Velg skuddposisjon:</h3>
+        ` : needsShotPosition ? `
+            <div>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
                     <button class="btn btn-blue" data-action="selectShotPosition" data-position="9m"
                             style="padding: 1rem; font-size: 1.125rem;">
@@ -249,18 +281,15 @@ export function renderShotPopupContent() {
                     </button>
                 </div>
             </div>
-        ` : ''}
-
-        ${canShowAssist && !APP.selectedAssist ? `
-            <div class="mb-6">
-                <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">
-                    Velg assist (valgfritt):
-                    <button class="btn btn-sm btn-secondary" data-action="skipAssist" style="float: right; padding: 0.5rem 1rem;">
-                        Hopp over
+        ` : needsAssist ? `
+            <div>
+                <div style="margin-bottom: 1rem;">
+                    <button class="btn btn-secondary" data-action="skipAssist" style="width: 100%; padding: 0.75rem;">
+                        Hopp over assist →
                     </button>
-                </h3>
+                </div>
                 <div class="player-grid">
-                    ${APP.players.filter(p => p.id !== APP.selectedAssist).map(player => `
+                    ${APP.players.filter(p => p.id !== APP.selectedShooter).map(player => `
                         <button class="player-button" data-action="selectAssist" data-player-id="${player.id}">
                             <span class="player-number">${player.number}</span>
                             <span class="player-name">${player.name}</span>
@@ -268,21 +297,12 @@ export function renderShotPopupContent() {
                     `).join('')}
                 </div>
             </div>
-        ` : ''}
-
-        ${canShowPlayerSelection ? `
+        ` : readyToRegister ? `
             <div>
-                <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">
-                    Velg spiller:
-                </h3>
-                <div class="player-grid">
-                    ${playersList.map(player => `
-                        <button class="player-button" data-action="registerShot" data-player-id="${player.id}">
-                            <span class="player-number">${player.number}</span>
-                            <span class="player-name">${player.name}</span>
-                        </button>
-                    `).join('')}
-                </div>
+                <button class="btn btn-success" data-action="registerShotFinal"
+                        style="width: 100%; padding: 1.5rem; font-size: 1.25rem; font-weight: 700;">
+                    ✅ Registrer skudd
+                </button>
             </div>
         ` : ''}
     `;
@@ -298,15 +318,18 @@ export function registerShot(playerId, closeModal, updateGoalVisualization, upda
         return false;
     }
 
-    if (!playerId) {
-        console.error('❌ registerShot: No playerId provided');
+    // Use selectedShooter if available (detailed mode), otherwise use playerId parameter (simple mode)
+    const shooterId = APP.selectedShooter || playerId;
+
+    if (!shooterId) {
+        console.error('❌ registerShot: No shooter selected');
         alert('Feil: Ingen spiller valgt. Vennligst velg en spiller.');
         return false;
     }
 
     const player = APP.mode === 'attack'
-        ? APP.players.find(p => p.id === playerId)
-        : APP.opponents.find(p => p.id === playerId);
+        ? APP.players.find(p => p.id === shooterId)
+        : APP.opponents.find(p => p.id === shooterId);
 
     if (!player) {
         console.error('❌ registerShot: Player not found', { playerId, mode: APP.mode });
@@ -397,6 +420,7 @@ export function registerShot(playerId, closeModal, updateGoalVisualization, upda
         // Clear temporary shot data AFTER successful save
         APP.tempShot = null;
         APP.selectedResult = null;
+        APP.selectedShooter = null;
         APP.selectedAttackType = null;
         APP.selectedShotPosition = null;
         APP.selectedAssist = null;
