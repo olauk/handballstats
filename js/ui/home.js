@@ -75,7 +75,7 @@ export function renderHomePage() {
                         <button class="btn btn-primary btn-lg"
                                 data-action="continueMatchSetup"
                                 style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 700;">
-                            📝 Fortsett oppsett av kamp
+                            📝 Fortsett kamp
                         </button>
                     ` : ''}
                     <button class="btn btn-blue btn-lg"
