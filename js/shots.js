@@ -79,28 +79,120 @@ export function selectShotResult(result, attachModalEventListeners) {
     }
 }
 
+export function selectAttackType(type, attachModalEventListeners) {
+    APP.selectedAttackType = type;
+
+    // Update modal content to show next step
+    const shotPopup = document.getElementById('shotPopup');
+    if (shotPopup) {
+        const modalContent = shotPopup.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.innerHTML = renderShotPopupContent();
+            attachModalEventListeners();
+        }
+    }
+}
+
+export function selectShotPosition(position, attachModalEventListeners) {
+    APP.selectedShotPosition = position;
+
+    // Update modal content to show next step
+    const shotPopup = document.getElementById('shotPopup');
+    if (shotPopup) {
+        const modalContent = shotPopup.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.innerHTML = renderShotPopupContent();
+            attachModalEventListeners();
+        }
+    }
+}
+
+export function selectAssist(playerId, attachModalEventListeners) {
+    APP.selectedAssist = playerId;
+
+    // Update modal content to show next step
+    const shotPopup = document.getElementById('shotPopup');
+    if (shotPopup) {
+        const modalContent = shotPopup.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.innerHTML = renderShotPopupContent();
+            attachModalEventListeners();
+        }
+    }
+}
+
+export function skipAssist(attachModalEventListeners) {
+    // Set to empty string to indicate "skipped" - different from null which means "not yet selected"
+    APP.selectedAssist = '';
+
+    // Update modal content to show player selection
+    const shotPopup = document.getElementById('shotPopup');
+    if (shotPopup) {
+        const modalContent = shotPopup.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.innerHTML = renderShotPopupContent();
+            attachModalEventListeners();
+        }
+    }
+}
+
 // Separate function for modal content only
 export function renderShotPopupContent() {
     const isOutside = APP.tempShot?.zone === 'outside';
     const needsResult = !isOutside && !APP.selectedResult;
     const playersList = APP.mode === 'attack' ? APP.players : APP.opponents;
 
+    // Check if we're in detailed shot registration mode
+    const isDetailedMode = APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed';
+
+    // Progressive disclosure steps for detailed mode
+    const needsAttackType = isDetailedMode && !isOutside && APP.selectedResult && !APP.selectedAttackType;
+    const needsShotPosition = isDetailedMode && !isOutside && APP.selectedResult && APP.selectedAttackType && !APP.selectedShotPosition;
+    const canShowAssist = isDetailedMode && APP.mode === 'attack' && APP.selectedResult === 'mål' && APP.selectedAttackType && APP.selectedShotPosition;
+    const canShowPlayerSelection = (APP.selectedResult || isOutside) && (!isDetailedMode || (APP.selectedAttackType && APP.selectedShotPosition));
+
+    // Build summary of selections for detailed mode
+    let selectionSummary = '';
+    if (isDetailedMode && (APP.selectedResult || APP.selectedAttackType || APP.selectedShotPosition || APP.selectedAssist)) {
+        const parts = [];
+        if (APP.selectedResult) parts.push(`Resultat: ${APP.selectedResult === 'mål' ? '⚽ Mål' : '🧤 Redning'}`);
+        if (APP.selectedAttackType) parts.push(`Angrep: ${APP.selectedAttackType === 'etablert' ? '🏃 Etablert' : '⚡ Kontring'}`);
+        if (APP.selectedShotPosition) {
+            const posLabels = { '9m': '9m', '6m': '6m', '7m': '7m', 'ka': 'KA' };
+            parts.push(`Posisjon: ${posLabels[APP.selectedShotPosition]}`);
+        }
+        if (APP.selectedAssist) {
+            const assistPlayer = APP.players.find(p => p.id === APP.selectedAssist);
+            parts.push(`Assist: #${assistPlayer?.number} ${assistPlayer?.name}`);
+        }
+        selectionSummary = `<p style="color: #4b5563; font-size: 0.875rem; margin-bottom: 1rem; padding: 0.75rem; background: #f3f4f6; border-radius: 0.5rem;">${parts.join(' • ')}</p>`;
+    }
+
     return `
         <div class="modal-header">
             <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81;">
                 ${APP.mode === 'attack' ? 'Registrer skudd' : 'Registrer motstanderskudd'}
+                ${isDetailedMode ? '<span style="font-size: 0.875rem; font-weight: 600; color: #10b981; margin-left: 0.5rem;">DETALJERT</span>' : ''}
             </h2>
             <button class="btn btn-secondary" data-action="closeShotPopup">
                 Lukk
             </button>
         </div>
 
+        ${selectionSummary}
+
         <p style="color: #4b5563; margin-bottom: 1.5rem;">
             ${isOutside
                 ? 'Skudd utenfor mål - velg spiller'
-                : APP.selectedResult
-                    ? 'Velg spiller som avfyrte skuddet'
-                    : 'Velg resultat av skuddet'}
+                : needsResult
+                    ? 'Steg 1: Velg resultat av skuddet'
+                    : needsAttackType
+                        ? 'Steg 2: Velg angrepstype'
+                        : needsShotPosition
+                            ? 'Steg 3: Velg skuddposisjon'
+                            : canShowAssist && !APP.selectedAssist
+                                ? 'Steg 4 (valgfritt): Velg assist, eller fortsett uten assist'
+                                : 'Steg ${isDetailedMode ? (canShowAssist ? "5" : "4") : "2"}: Velg spiller som avfyrte skuddet'}
         </p>
 
         ${needsResult ? `
@@ -119,15 +211,69 @@ export function renderShotPopupContent() {
             </div>
         ` : ''}
 
-        ${(APP.selectedResult || isOutside) ? `
+        ${needsAttackType ? `
+            <div class="mb-6">
+                <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">Velg angrepstype:</h3>
+                <div class="grid-2">
+                    <button class="btn btn-blue" data-action="selectAttackType" data-type="etablert"
+                            style="padding: 1rem; font-size: 1.125rem;">
+                        🏃 Etablert angrep
+                    </button>
+                    <button class="btn btn-purple" data-action="selectAttackType" data-type="kontring"
+                            style="padding: 1rem; font-size: 1.125rem;">
+                        ⚡ Kontring
+                    </button>
+                </div>
+            </div>
+        ` : ''}
+
+        ${needsShotPosition ? `
+            <div class="mb-6">
+                <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">Velg skuddposisjon:</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+                    <button class="btn btn-blue" data-action="selectShotPosition" data-position="9m"
+                            style="padding: 1rem; font-size: 1.125rem;">
+                        9m
+                    </button>
+                    <button class="btn btn-blue" data-action="selectShotPosition" data-position="6m"
+                            style="padding: 1rem; font-size: 1.125rem;">
+                        6m
+                    </button>
+                    <button class="btn btn-blue" data-action="selectShotPosition" data-position="7m"
+                            style="padding: 1rem; font-size: 1.125rem;">
+                        7m
+                    </button>
+                    <button class="btn btn-blue" data-action="selectShotPosition" data-position="ka"
+                            style="padding: 1rem; font-size: 1.125rem;">
+                        KA (Kantangrep)
+                    </button>
+                </div>
+            </div>
+        ` : ''}
+
+        ${canShowAssist && !APP.selectedAssist ? `
+            <div class="mb-6">
+                <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">
+                    Velg assist (valgfritt):
+                    <button class="btn btn-sm btn-secondary" data-action="skipAssist" style="float: right; padding: 0.5rem 1rem;">
+                        Hopp over
+                    </button>
+                </h3>
+                <div class="player-grid">
+                    ${APP.players.filter(p => p.id !== APP.selectedAssist).map(player => `
+                        <button class="player-button" data-action="selectAssist" data-player-id="${player.id}">
+                            <span class="player-number">${player.number}</span>
+                            <span class="player-name">${player.name}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        ` : ''}
+
+        ${canShowPlayerSelection ? `
             <div>
                 <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">
                     Velg spiller:
-                    ${APP.selectedResult ? `
-                        <span style="font-weight: 400; font-size: 0.875rem; color: #4b5563;">
-                            (Resultat: ${APP.selectedResult === 'mål' ? '⚽ Mål' : '🧤 Redning'})
-                        </span>
-                    ` : ''}
                 </h3>
                 <div class="player-grid">
                     ${playersList.map(player => `
@@ -194,6 +340,25 @@ export function registerShot(playerId, closeModal, updateGoalVisualization, upda
             timestamp: new Date().toLocaleTimeString('no-NO')
         };
 
+        // Add advanced shot registration fields (only in detailed mode)
+        if (APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed') {
+            if (APP.selectedAttackType) {
+                event.attackType = APP.selectedAttackType;
+            }
+            if (APP.selectedShotPosition) {
+                event.shotPosition = APP.selectedShotPosition;
+            }
+            // Assist only for goals and only for own team (attack mode)
+            if (APP.selectedAssist && APP.mode === 'attack' && event.result === 'mål') {
+                const assistPlayer = APP.players.find(p => p.id === APP.selectedAssist);
+                event.assist = assistPlayer ? {
+                    id: assistPlayer.id,
+                    number: assistPlayer.number,
+                    name: assistPlayer.name
+                } : null;
+            }
+        }
+
         // Add timer timestamp in advanced mode
         if (APP.matchMode === 'advanced') {
             const timerTime = getCurrentTimerTime();
@@ -232,6 +397,9 @@ export function registerShot(playerId, closeModal, updateGoalVisualization, upda
         // Clear temporary shot data AFTER successful save
         APP.tempShot = null;
         APP.selectedResult = null;
+        APP.selectedAttackType = null;
+        APP.selectedShotPosition = null;
+        APP.selectedAssist = null;
 
         // Invalider statistikk-cache AFTER save
         PERFORMANCE.invalidateStatsCache();

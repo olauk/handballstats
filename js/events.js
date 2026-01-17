@@ -16,6 +16,10 @@ import {
 import {
     handleGoalClick,
     selectShotResult,
+    selectAttackType,
+    selectShotPosition,
+    selectAssist,
+    skipAssist,
     registerShot,
     registerTechnicalError,
     updateGoalVisualization,
@@ -185,6 +189,18 @@ export function setupGlobalEventListeners(render) {
             case 'selectResult':
                 selectShotResult(button.dataset.result, attachModalEventListeners);
                 break;
+            case 'selectAttackType':
+                selectAttackType(button.dataset.type, attachModalEventListeners);
+                break;
+            case 'selectShotPosition':
+                selectShotPosition(button.dataset.position, attachModalEventListeners);
+                break;
+            case 'selectAssist':
+                selectAssist(parseInt(button.dataset.playerId), attachModalEventListeners);
+                break;
+            case 'skipAssist':
+                skipAssist(attachModalEventListeners);
+                break;
             case 'registerShot':
                 registerShot(parseInt(button.dataset.playerId), closeModal,
                     updateGoalVisualization, () => updateStatisticsOnly(renderStatistics, () => {}));
@@ -193,6 +209,9 @@ export function setupGlobalEventListeners(render) {
                 closeModal('shotPopup');
                 APP.tempShot = null;
                 APP.selectedResult = null;
+                APP.selectedAttackType = null;
+                APP.selectedShotPosition = null;
+                APP.selectedAssist = null;
                 // Optimalisert: Oppdater kun målvisualisering for å fjerne temp marker
                 updateGoalVisualization();
                 break;
@@ -277,6 +296,11 @@ export function setupGlobalEventListeners(render) {
                 break;
             case 'setHalfLength':
                 APP.timerConfig.halfLength = parseInt(button.dataset.length);
+                saveToLocalStorage();
+                render();
+                break;
+            case 'setShotRegistrationMode':
+                APP.shotRegistrationMode = button.dataset.mode;
                 saveToLocalStorage();
                 render();
                 break;
