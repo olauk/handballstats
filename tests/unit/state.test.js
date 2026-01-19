@@ -2,7 +2,7 @@
 // STATE MANAGEMENT TESTS
 // ============================================
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PERFORMANCE } from '../../js/state.js';
+import { PERFORMANCE, APP } from '../../js/state.js';
 
 describe('State - PERFORMANCE Cache Management', () => {
   beforeEach(() => {
@@ -126,5 +126,161 @@ describe('State - PERFORMANCE Cache Management', () => {
 
     // Restore original max size
     PERFORMANCE.maxCacheSize = originalMaxCacheSize;
+  });
+});
+
+// ============================================
+// NEW: Advanced Shot Registration State
+// ============================================
+describe('State - Advanced Shot Registration Variables', () => {
+  beforeEach(() => {
+    // Reset shot registration state
+    APP.shotRegistrationMode = 'simple';
+    APP.selectedShooter = null;
+    APP.selectedAttackType = null;
+    APP.selectedShotPosition = null;
+    APP.selectedAssist = null;
+  });
+
+  it('skal ha shotRegistrationMode som default er "simple"', () => {
+    expect(APP.shotRegistrationMode).toBe('simple');
+  });
+
+  it('skal støtte shotRegistrationMode "simple" og "detailed"', () => {
+    APP.shotRegistrationMode = 'simple';
+    expect(APP.shotRegistrationMode).toBe('simple');
+
+    APP.shotRegistrationMode = 'detailed';
+    expect(APP.shotRegistrationMode).toBe('detailed');
+  });
+
+  it('skal ha selectedShooter som default er null', () => {
+    expect(APP.selectedShooter).toBeNull();
+  });
+
+  it('skal kunne sette selectedShooter til player ID', () => {
+    APP.selectedShooter = 'player-123';
+    expect(APP.selectedShooter).toBe('player-123');
+  });
+
+  it('skal ha selectedAttackType som default er null', () => {
+    expect(APP.selectedAttackType).toBeNull();
+  });
+
+  it('skal støtte selectedAttackType "etablert" og "kontring"', () => {
+    APP.selectedAttackType = 'etablert';
+    expect(APP.selectedAttackType).toBe('etablert');
+
+    APP.selectedAttackType = 'kontring';
+    expect(APP.selectedAttackType).toBe('kontring');
+  });
+
+  it('skal ha selectedShotPosition som default er null', () => {
+    expect(APP.selectedShotPosition).toBeNull();
+  });
+
+  it('skal støtte alle skuddposisjoner: 9m, 6m, 7m, ka', () => {
+    const positions = ['9m', '6m', '7m', 'ka'];
+
+    for (const position of positions) {
+      APP.selectedShotPosition = position;
+      expect(APP.selectedShotPosition).toBe(position);
+    }
+  });
+
+  it('skal ha selectedAssist som default er null', () => {
+    expect(APP.selectedAssist).toBeNull();
+  });
+
+  it('skal kunne sette selectedAssist til player ID', () => {
+    APP.selectedAssist = 'player-456';
+    expect(APP.selectedAssist).toBe('player-456');
+  });
+
+  it('skal støtte tom string for selectedAssist (skipped)', () => {
+    APP.selectedAssist = '';
+    expect(APP.selectedAssist).toBe('');
+    // Empty string means "skipped", null means "not yet selected"
+  });
+
+  it('skal kunne nullstille alle advanced shot registration variabler', () => {
+    // Set all to non-null values
+    APP.shotRegistrationMode = 'detailed';
+    APP.selectedShooter = 'player-1';
+    APP.selectedAttackType = 'etablert';
+    APP.selectedShotPosition = '9m';
+    APP.selectedAssist = 'player-2';
+
+    // Reset all
+    APP.shotRegistrationMode = 'simple';
+    APP.selectedShooter = null;
+    APP.selectedAttackType = null;
+    APP.selectedShotPosition = null;
+    APP.selectedAssist = null;
+
+    // Verify all reset
+    expect(APP.shotRegistrationMode).toBe('simple');
+    expect(APP.selectedShooter).toBeNull();
+    expect(APP.selectedAttackType).toBeNull();
+    expect(APP.selectedShotPosition).toBeNull();
+    expect(APP.selectedAssist).toBeNull();
+  });
+
+  it('skal kunne spore en komplett detaljert skuddregistrering workflow', () => {
+    // Step 1: Enable detailed mode
+    APP.shotRegistrationMode = 'detailed';
+    expect(APP.shotRegistrationMode).toBe('detailed');
+
+    // Step 2: Select shooter
+    APP.selectedShooter = 'player-7';
+    expect(APP.selectedShooter).toBe('player-7');
+
+    // Step 3: Select attack type
+    APP.selectedAttackType = 'kontring';
+    expect(APP.selectedAttackType).toBe('kontring');
+
+    // Step 4: Select shot position
+    APP.selectedShotPosition = '6m';
+    expect(APP.selectedShotPosition).toBe('6m');
+
+    // Step 5: Select assist (or skip)
+    APP.selectedAssist = 'player-3';
+    expect(APP.selectedAssist).toBe('player-3');
+
+    // All variables should be set
+    expect(APP.selectedShooter).toBe('player-7');
+    expect(APP.selectedAttackType).toBe('kontring');
+    expect(APP.selectedShotPosition).toBe('6m');
+    expect(APP.selectedAssist).toBe('player-3');
+  });
+});
+
+// ============================================
+// NEW: Help Page State
+// ============================================
+describe('State - Help Page', () => {
+  it('skal støtte "help" som page value', () => {
+    APP.page = 'help';
+    expect(APP.page).toBe('help');
+  });
+
+  it('skal ha help som en av de gyldige page values', () => {
+    const validPages = [
+      'login',
+      'register',
+      'reset-password',
+      'home',
+      'setup',
+      'match',
+      'history',
+      'viewMatch',
+      'teamRoster',
+      'help',
+    ];
+
+    for (const page of validPages) {
+      APP.page = page;
+      expect(APP.page).toBe(page);
+    }
   });
 });
