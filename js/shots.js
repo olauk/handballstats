@@ -231,7 +231,7 @@ export function renderShotPopupContent() {
             <div>
                 <div class="player-grid">
                     ${playersList.map(player => `
-                        <button class="player-button" data-action="selectShooter" data-player-id="${player.id}">
+                        <button class="player-button" data-action="${isDetailedMode ? 'selectShooter' : 'registerShot'}" data-player-id="${player.id}">
                             <span class="player-number">${player.number}</span>
                             <span class="player-name">${player.name}</span>
                         </button>

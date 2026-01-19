@@ -2,7 +2,7 @@
 // LOGIN & AUTH WITH FIREBASE
 // ============================================
 import { APP, PERFORMANCE } from './state.js';
-import { saveToLocalStorageImmediate } from './storage.js';
+import { saveToLocalStorageImmediate, saveToLocalStorage } from './storage.js';
 import { auth, db } from './firebase-config.js';
 import { migrateLocalStorageToFirestore, syncFromFirestore } from './firestore-storage.js';
 
