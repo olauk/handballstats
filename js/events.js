@@ -268,6 +268,10 @@ export function setupGlobalEventListeners(render) {
                 APP.page = 'history';
                 render();
                 break;
+            case 'viewHelp':
+                APP.page = 'help';
+                render();
+                break;
             case 'viewMatch':
                 if (viewCompletedMatch(parseInt(button.dataset.matchId))) render();
                 break;
