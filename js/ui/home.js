@@ -91,9 +91,14 @@ export function renderHomePage() {
                 </div>
 
                 <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
-                    <button class="btn btn-secondary" data-action="logout">
-                        Logg ut
-                    </button>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-blue" data-action="viewHelp">
+                            ❓ Hjelp
+                        </button>
+                        <button class="btn btn-secondary" data-action="logout">
+                            Logg ut
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -7,6 +7,7 @@ import { renderSetupPage } from './setup.js';
 import { renderHistoryPage, renderViewMatchPage } from './history.js';
 import { renderHomePage } from './home.js';
 import { renderTeamRosterPage } from './team-roster.js';
+import { renderHelpPage } from './help.js';
 
 export function render(attachEventListeners, renderFunction) {
     const app = document.getElementById('app');
@@ -26,6 +27,8 @@ export function render(attachEventListeners, renderFunction) {
         app.innerHTML = renderSetupPage();
     } else if (APP.page === 'history') {
         app.innerHTML = renderHistoryPage();
+    } else if (APP.page === 'help') {
+        app.innerHTML = renderHelpPage();
     } else if (APP.page === 'viewMatch') {
         app.innerHTML = renderViewMatchPage();
     } else if (APP.page === 'match') {
