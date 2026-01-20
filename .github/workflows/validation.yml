@@ -1,0 +1,140 @@
+name: Code Validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - 'claude/**'
+
+jobs:
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: false
+
+      - name: Run Prettier check
+        run: npm run format:check
+        continue-on-error: false
+
+      - name: Run tests
+        run: npm run test:run
+        continue-on-error: false
+
+      - name: Check for console.log in staged files
+        run: |
+          if git diff origin/main...HEAD --name-only | xargs grep -n "console\.log" --color=never 2>/dev/null; then
+            echo "❌ Found console.log statements in changed files"
+            echo "Please remove console.log before merging"
+            exit 1
+          else
+            echo "✅ No console.log found in changed files"
+          fi
+        continue-on-error: false
+
+  zone-validation:
+    name: RED ZONE File Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check RED ZONE files
+        run: |
+          # Get changed files compared to main branch
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+
+          # Define RED ZONE files
+          RED_ZONE_FILES=(
+            "js/shots.js"
+            "js/state.js"
+            "js/storage.js"
+            "js/firestore-storage.js"
+            "js/statistics.js"
+          )
+
+          RED_ZONE_CHANGED=false
+
+          for file in "${RED_ZONE_FILES[@]}"; do
+            if echo "$CHANGED_FILES" | grep -q "^$file$"; then
+              echo "⚠️  RED ZONE file changed: $file"
+              RED_ZONE_CHANGED=true
+            fi
+          done
+
+          if [ "$RED_ZONE_CHANGED" = true ]; then
+            echo ""
+            echo "🔴 RED ZONE files have been modified!"
+            echo "Running comprehensive test suite..."
+            echo ""
+            npm run test:run
+
+            if [ $? -ne 0 ]; then
+              echo ""
+              echo "❌ Tests failed for RED ZONE changes"
+              echo "See DEVELOPMENT_RULES.md for requirements"
+              exit 1
+            else
+              echo ""
+              echo "✅ All tests passed for RED ZONE changes"
+            fi
+          else
+            echo "✅ No RED ZONE files changed"
+          fi
+
+  commit-format:
+    name: Validate Commit Messages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit message format
+        run: |
+          # Get commit messages since main branch
+          COMMITS=$(git log origin/main..HEAD --format=%B)
+
+          echo "Checking commit message format..."
+          echo ""
+
+          # Check for required format: type(scope): subject
+          if echo "$COMMITS" | grep -qE "^(feat|fix|docs|style|refactor|test|chore)\(.*\): .+"; then
+            echo "✅ Commit messages follow required format"
+          else
+            echo "⚠️  Some commits may not follow the format"
+            echo "Expected format: type(scope): subject"
+            echo ""
+            echo "Recent commits:"
+            git log origin/main..HEAD --format="%h %s" | head -5
+          fi
