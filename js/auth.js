@@ -179,12 +179,16 @@ export async function handleLogin(e) {
         return false;
     }
 
+    // Get button reference and original text before try block
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn?.textContent;
+
     try {
         // Show loading state
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Logger inn...';
-        submitBtn.disabled = true;
+        if (submitBtn) {
+            submitBtn.textContent = 'Logger inn...';
+            submitBtn.disabled = true;
+        }
 
         // Sign in with Firebase
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
@@ -275,12 +279,16 @@ export async function handlePasswordReset(e) {
         return false;
     }
 
+    // Get button reference and original text before try block
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn?.textContent;
+
     try {
         // Show loading state
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Sender e-post...';
-        submitBtn.disabled = true;
+        if (submitBtn) {
+            submitBtn.textContent = 'Sender e-post...';
+            submitBtn.disabled = true;
+        }
 
         await auth.sendPasswordResetEmail(email);
 

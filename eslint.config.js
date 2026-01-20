@@ -20,6 +20,7 @@ export default [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        requestAnimationFrame: 'readonly',
         FormData: 'readonly',
         fetch: 'readonly',
         URL: 'readonly',

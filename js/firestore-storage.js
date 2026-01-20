@@ -3,6 +3,7 @@
 // ============================================
 import { APP, PERFORMANCE } from './state.js';
 import { auth, db } from './firebase-config.js';
+import { logAppEvent } from './debug-logger.js';
 
 // ============================================
 // SAVE ACTIVE MATCH TO FIRESTORE
