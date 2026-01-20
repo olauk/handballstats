@@ -1,13 +1,14 @@
-# HANDBALL ANALYTICS v3.0 - ARKITEKTUR-DOKUMENTASJON
+# Handball Analytics - System Architecture
 
-**Dato:** 2026-01-12
-**Versjon:** v3.0
-**Formål:** Visuell dokumentasjon av systemarkitektur
+**Version:** 3.2 (Merged)
+**Dato:** 2026-01-20
+**Status:** Production
 
 ---
 
-## INNHOLDSFORTEGNELSE
+## 📋 Innholdsfortegnelse
 
+### Del 1: Visual Architecture
 1. [System Overview](#1-system-overview)
 2. [Fil-avhengigheter](#2-fil-avhengigheter)
 3. [Dataflyt: Skuddregistrering](#3-dataflyt-skuddregistrering)
@@ -17,7 +18,21 @@
 7. [UI Rendering Flow](#7-ui-rendering-flow)
 8. [Event Handling Strategy](#8-event-handling-strategy)
 
+### Del 2: Implementation Details
+9. [Filstruktur](#9-filstruktur)
+10. [Moduler og Ansvar](#10-moduler-og-ansvar)
+11. [Arkitekturprinsipper](#11-arkitekturprinsipper)
+12. [Skuddregistreringsflyt (Detailed)](#12-skuddregistreringsflyt-detailed)
+13. [Autentiseringsflyt](#13-autentiseringsflyt)
+14. [Lagringsarkitektur (Details)](#14-lagringsarkitektur-details)
+15. [Sikkerhetsarkitektur](#15-sikkerhetsarkitektur)
+16. [Ytelsesoptimalisering](#16-ytelsesoptimalisering)
+17. [Fremtidig Arkitektur](#17-fremtidig-arkitektur)
+18. [Arkitektur-Insights](#18-arkitektur-insights)
+
 ---
+
+# DEL 1: VISUAL ARCHITECTURE
 
 ## 1. SYSTEM OVERVIEW
 
@@ -1006,7 +1021,740 @@ sequenceDiagram
 
 ---
 
-## 9. ARKITEKTUR-INSIGHTS
+# DEL 2: IMPLEMENTATION DETAILS
+
+## 9. FILSTRUKTUR
+
+```
+handballstats/
+├── index.html                      # Inngangspunkt
+├── styles.css                      # Global styling
+├── firebase.json                   # Firebase hosting config
+├── firestore.rules                 # Firestore security rules
+├── ARCHITECTURE.md                 # Dette dokumentet
+├── DEVELOPMENT_RULES.md            # Utviklingsregler (RED/YELLOW/GREEN zones)
+├── SECURITY_RULES.md               # Sikkerhetsregler (auth, validation, XSS)
+├── TEST_GUIDE.md                   # Testing guide
+├── STORAGE-ANALYSIS-REPORT.md      # Storage architecture analysis
+├── js/
+│   ├── app.js                      # Main entry point (22 lines)
+│   ├── state.js                    # Global state management (127 lines)
+│   ├── storage.js                  # localStorage operations (64 lines)
+│   ├── firebase-config.js          # Firebase initialization (48 lines)
+│   ├── firestore-storage.js        # Firestore operations (277 lines)
+│   ├── auth.js                     # Authentication logic (327 lines)
+│   ├── events.js                   # Global event handling (562 lines)
+│   ├── shots.js                    # Shot registration logic (368 lines)
+│   ├── players.js                  # Player management (229 lines)
+│   ├── team-roster.js              # Team roster management (307 lines)
+│   ├── match.js                    # Match state management
+│   ├── history.js                  # Match history
+│   ├── timer.js                    # Match timer (204 lines)
+│   ├── statistics.js               # Stats calculation (48 lines)
+│   ├── utils.js                    # Utilities (264 lines)
+│   ├── debug-logger.js             # Debug logging system (245 lines)
+│   └── ui/
+│       ├── render.js               # Main rendering orchestrator (354 lines)
+│       ├── login.js                # Login page
+│       ├── register.js             # Registration page
+│       ├── reset-password.js       # Password reset page
+│       ├── home.js                 # Home page (101 lines)
+│       ├── setup.js                # Match setup page (259 lines)
+│       ├── match.js                # Match page (427 lines)
+│       ├── history.js              # Match history page (168 lines)
+│       ├── view-match.js           # View completed match
+│       ├── team-roster.js          # Team roster page (220 lines)
+│       ├── modals.js               # Modal management (255 lines)
+│       ├── event-feed.js           # Live feed (189 lines)
+│       └── help.js                 # Help page
+└── tests/                          # Test files (Vitest)
+    ├── shots.test.js
+    ├── state.test.js
+    ├── storage.test.js
+    └── ...
+```
+
+---
+
+## 10. MODULER OG ANSVAR
+
+### Core Modules
+
+#### `app.js`
+- **Ansvar:** Application bootstrap
+- **Funksjoner:**
+  - Initialiserer app ved DOMContentLoaded
+  - Loader state fra localStorage
+  - Setup global event listeners
+  - Initialiserer Firebase auth observer
+  - Trigger initial rendering
+
+#### `state.js`
+- **Ansvar:** Global state management
+- **Exports:**
+  - `APP` - Global state object
+  - `PERFORMANCE` - Performance optimization utilities
+  - Helper functions for accessing current match data
+  - `generateUniqueId()` - Unique ID generator for players
+
+**APP State Structure:**
+```javascript
+{
+  // Auth
+  currentUser: {uid, email, displayName, homeTeam} | null,
+
+  // Navigation
+  page: 'login' | 'register' | 'reset-password' | 'home' | 'setup' |
+        'match' | 'history' | 'viewMatch' | 'teamRoster' | 'help',
+
+  // Match Configuration
+  matchMode: 'simple' | 'advanced',
+  shotRegistrationMode: 'simple' | 'detailed',
+  timerConfig: { halfLength: 20 | 25 | 30 },
+
+  // Match Data
+  homeTeam: string,
+  awayTeam: string,
+  matchDate: string,
+  currentHalf: number,
+  players: Player[],
+  opponents: Player[],
+  activeKeeper: Player | null,
+  mode: 'attack' | 'defense',
+  events: Event[],
+
+  // Shot Registration State
+  tempShot: Shot | null,
+  selectedResult: 'mål' | 'redning' | null,
+  selectedShooter: playerId | null,
+  selectedAttackType: 'etablert' | 'kontring' | null,
+  selectedShotPosition: '9m' | '6m' | '7m' | 'ka' | null,
+  selectedAssist: playerId | null,
+  showShotDetails: boolean,
+  shotDetailsData: object | null,
+
+  // Match History
+  completedMatches: Match[],
+  viewingMatch: Match | null,
+
+  // Team Roster
+  savedTeams: SavedTeam[],
+  editingTeamId: number | null,
+  importingTeamId: number | null,
+
+  // Player Management
+  managingTeam: 'players' | 'opponents' | null,
+  tempPlayersList: Player[],
+  editingPlayerId: number | null,
+
+  // Timer (Advanced Mode)
+  timerState: {
+    isRunning: boolean,
+    currentTime: number,
+    intervalId: number | null
+  },
+
+  // Internal
+  _idCounter: number,
+  isImportingFile: boolean
+}
+```
+
+#### `storage.js`
+- **Ansvar:** localStorage operations
+- **Funksjoner:**
+  - `saveToLocalStorage()` - Debounced save (300ms)
+  - `saveToLocalStorageImmediate()` - Immediate save
+  - `loadFromLocalStorage()` - Load state on app start
+
+#### `firebase-config.js`
+- **Ansvar:** Firebase initialization
+- **Exports:** `auth`, `db`, `firebase`
+
+#### `firestore-storage.js`
+- **Ansvar:** Cloud storage operations
+- **Funksjoner:**
+  - `saveMatchToFirestore()` - Save active match
+  - `saveMatchToFirestoreDebounced()` - Debounced (1000ms)
+  - `loadMatchFromFirestore()` - Load active match
+  - `saveCompletedMatchToFirestore()` - Save completed match
+  - `loadCompletedMatchesFromFirestore()` - Load all completed
+  - `deleteCompletedMatchFromFirestore()` - Delete match
+  - `migrateLocalStorageToFirestore()` - First-time migration
+  - `syncFromFirestore()` - Sync data on login
+
+**Firestore Structure:**
+```
+/users/{userId}/
+  ├── settings (document)          [FUTURE]
+  │   └── preferences
+  ├── teamRosters/ (collection)    [FUTURE]
+  │   └── {rosterId} (document)
+  └── matches/ (collection)
+      ├── active (document)        [CURRENT]
+      └── {matchId} (document)     [CURRENT]
+```
+
+#### `auth.js`
+- **Ansvar:** Authentication and user management
+- **Funksjoner:**
+  - `validateEmail()`, `validatePassword()`
+  - `handleRegister()`, `handleLogin()`, `handleLogout()`
+  - `handlePasswordReset()`
+  - `startNewMatch()` - Reset all match data
+  - `continueMatchSetup()` - Continue existing setup
+  - `initAuthStateObserver()` - Firebase auth state listener
+
+---
+
+### Business Logic Modules
+
+#### `shots.js` (RED ZONE)
+- **Ansvar:** Shot registration logic
+- **Funksjoner:**
+  - `handleGoalClick()` - Click on goal visualization
+  - `selectResult()` - Select mål/redning
+  - `selectShooter()` - Select shooter (detailed mode)
+  - `selectAttackType()` - Select etablert/kontring
+  - `selectShotPosition()` - Select 9m/6m/7m/ka
+  - `selectAssist()` - Select assist player
+  - `skipAssist()` - Skip assist selection
+  - `registerShot()` - Final shot registration
+  - `registerTechnicalError()` - Register technical error
+  - `deleteEvent()` - Delete event
+
+**Shot Registration Flow (Detailed Mode):**
+```
+1. User clicks goal → tempShot created
+2. User selects result → selectedResult set
+3. User selects shooter → selectedShooter set
+4. User selects attack type → selectedAttackType set
+5. User selects shot position → selectedShotPosition set
+6. If goal: User selects assist or skips
+7. registerShot() called → event created → state reset
+```
+
+#### `players.js` (YELLOW ZONE)
+- **Ansvar:** Player management
+- **Funksjoner:**
+  - `addPlayer()`, `editPlayer()`, `deletePlayer()`
+  - `setActiveKeeper()`, `removeActiveKeeper()`
+  - `loadPlayersFromFile()` - Import from JSON/CSV/TXT
+
+#### `team-roster.js`
+- **Ansvar:** Team roster management
+- **Funksjoner:**
+  - `saveTeamRoster()` - Save current players as roster
+  - `importTeamRoster()` - Import roster to match setup
+  - `editTeamRoster()` - Edit saved roster
+  - `deleteTeamRoster()` - Delete saved roster
+  - `loadTeamRosterFromFile()` - Import roster from file
+
+#### `match.js`
+- **Ansvar:** Match state management
+- **Funksjoner:**
+  - `finishMatch()` - Complete and save match
+  - `exportMatchData()` - Export to JSON
+  - Statistics calculation helpers
+
+#### `history.js`
+- **Ansvar:** Match history management
+- **Funksjoner:**
+  - `viewMatch()` - View completed match details
+  - `deleteMatch()` - Delete from history
+  - `backToHistory()` - Navigate back
+
+#### `timer.js` (YELLOW ZONE)
+- **Ansvar:** Match timer (advanced mode only)
+- **Funksjoner:**
+  - `startTimer()`, `pauseTimer()`, `resetTimer()`
+  - `setHalfLength()` - Configure half duration
+  - `formatTime()` - Format seconds to MM:SS
+
+#### `statistics.js` (RED ZONE)
+- **Ansvar:** Calculate statistics from events
+- **Funksjoner:**
+  - Aggregate shot statistics per player/team
+  - Used by shots.js and UI components
+
+---
+
+### UI Modules
+
+All UI modules export a single render function that returns HTML string.
+
+#### `ui/render.js`
+- **Ansvar:** Main rendering orchestrator
+- **Funksjoner:**
+  - `render()` - Routes to correct page renderer
+  - Attaches event listeners after rendering
+
+#### `ui/login.js`, `ui/register.js`, `ui/reset-password.js`
+- **Ansvar:** Authentication pages
+- **Funksjoner:** `renderLoginPage()`, `renderRegisterPage()`, `renderResetPasswordPage()`
+
+#### `ui/home.js`
+- **Ansvar:** Home page
+- **Funksjoner:**
+  - `renderHomePage()` - Shows two buttons:
+    - "Start ny kamp" - Calls `startNewMatch()`
+    - "Fortsett kamp" - Calls `continueMatchSetup()` (only if data exists)
+
+#### `ui/setup.js`
+- **Ansvar:** Match setup page
+- **Funksjoner:**
+  - `renderSetupPage()` - Full setup interface
+  - Match mode toggle (simple/advanced)
+  - Shot registration mode toggle (simple/detailed) - only in advanced
+  - Timer configuration - only in advanced
+  - Player/opponent management
+  - File import
+
+#### `ui/match.js`
+- **Ansvar:** Live match page
+- **Funksjoner:**
+  - `renderMatchPage()` - Full match interface
+  - Goal visualization
+  - Statistics tables
+  - Shot popup (modal)
+  - Timer display (advanced mode)
+
+#### `ui/history.js`
+- **Ansvar:** Match history list
+- **Funksjoner:**
+  - `renderHistoryPage()` - List all completed matches
+  - View/delete actions
+
+#### `ui/view-match.js`
+- **Ansvar:** View completed match details
+- **Funksjoner:**
+  - `renderViewMatchPage()` - Read-only match view
+  - Statistics and events from completed match
+
+#### `ui/team-roster.js`
+- **Ansvar:** Team roster management page
+- **Funksjoner:**
+  - `renderTeamRosterPage()` - List all saved rosters
+  - Save/edit/delete/import actions
+
+#### `ui/help.js`
+- **Ansvar:** Help and documentation page
+- **Funksjoner:**
+  - `renderHelpPage()` - Comprehensive guide
+  - Covers simple and advanced mode
+  - Step-by-step instructions
+
+---
+
+## 11. ARKITEKTURPRINSIPPER
+
+### 1. Separation of Concerns
+Hver modul har et spesifikt ansvar:
+- **UI-moduler:** Rendering av HTML
+- **Business logic:** State management og databehandling
+- **Storage:** Persistering av data
+- **Events:** Håndtering av brukerinteraksjoner
+
+### 2. Immutable State Updates
+State oppdateres aldri direkte. Alle endringer går gjennom dedikerte funksjoner som:
+1. Oppdaterer APP-objektet
+2. Invaliderer cache
+3. Trigger re-rendering
+4. Lagrer til storage
+
+### 3. Progressive Disclosure
+UI viser kun relevant informasjon basert på:
+- Valgt modus (simple/advanced)
+- Valgt skuddregistreringsmodus (simple/detailed)
+- Kampstatus (setup/active/completed)
+
+### 4. Offline-First med Cloud Sync
+- **Primær lagring:** localStorage (rask, offline)
+- **Backup lagring:** Firestore (persistent, cross-device)
+- **Hybrid modell:** Les lokalt, skriv til begge
+
+---
+
+## 12. SKUDDREGISTRERINGSFLYT (DETAILED)
+
+### Simple Mode
+
+1. User clicks goal/outside → `handleGoalClick()`
+2. Modal shows: Mål/Redning buttons
+3. User selects result → `selectResult()`
+4. Modal shows: Player list
+5. User selects player → `registerShot()`
+6. Event created, stats updated, modal closed
+
+### Detailed Mode (Advanced)
+
+1. User clicks goal/outside → `handleGoalClick()`
+2. Modal shows: **Mål/Redning** buttons
+3. User selects result → `selectResult()`
+4. Modal shows: **Velg skytter** (player list)
+5. User selects shooter → `selectShooter()`
+6. Modal shows: **Velg type angrep** (Etablert/Kontring)
+7. User selects attack type → `selectAttackType()`
+8. Modal shows: **Velg skuddposisjon** (9m/6m/7m/KA)
+9. User selects position → `selectShotPosition()`
+10. If goal: Modal shows **Velg assist** (player list + skip)
+11. User selects assist or skips → `selectAssist()` or `skipAssist()`
+12. `registerShot()` called automatically
+13. Event created with full details, stats updated, modal closed
+
+**Progressive Disclosure:**
+- Only one step visible at a time
+- Previous selections shown at top
+- No scrolling needed on mobile
+
+**Event Data Structure:**
+```javascript
+{
+  id: uniqueId,
+  type: 'shot' | 'technicalError',
+  team: 'own' | 'opponent',
+  player: {id, name, number},
+  result: 'mål' | 'redning' | 'utenfor',
+  x: number,
+  y: number,
+  half: number,
+  timestamp: ISO string,
+  // Detailed mode only:
+  attackType: 'etablert' | 'kontring',
+  shotPosition: '9m' | '6m' | '7m' | 'ka',
+  assist: {id, name, number} | null
+}
+```
+
+---
+
+## 13. AUTENTISERINGSFLYT
+
+### Registration Flow
+
+```
+User fills form
+    ↓
+validateEmail(), validatePassword()
+    ↓
+auth.createUserWithEmailAndPassword()
+    ↓
+Create user profile in Firestore
+    ↓
+Update displayName
+    ↓
+Set APP.currentUser
+    ↓
+Navigate to home
+```
+
+### Login Flow
+
+```
+User enters credentials
+    ↓
+auth.signInWithEmailAndPassword()
+    ↓
+Fetch user profile from Firestore
+    ↓
+Set APP.currentUser
+    ↓
+migrateLocalStorageToFirestore() [first time]
+    ↓
+syncFromFirestore()
+    ↓
+Navigate to home
+```
+
+### Auth State Persistence
+
+```
+App starts
+    ↓
+initAuthStateObserver() registered
+    ↓
+Firebase checks persisted auth state
+    ↓
+If authenticated: auto-login
+    ↓
+If not: show login page
+```
+
+---
+
+## 14. LAGRINGSARKITEKTUR (DETAILS)
+
+### Hybrid Storage Model
+
+Systemet bruker en **hybrid lagringsmodell** med localStorage som primær lagring og Firestore som cloud backup.
+
+#### localStorage (Primær)
+
+**Hva lagres:**
+- Hele `APP`-objektet serialiseres til JSON
+- Inkluderer ALL state data (se STORAGE-ANALYSIS-REPORT.md)
+
+**Strategi:**
+- Debounced save (300ms) for normal bruk
+- Immediate save for kritiske operasjoner (login, logout, match finish)
+
+**Fordeler:**
+- ⚡ Rask tilgang (synkron)
+- 📴 Offline-støtte
+- 🆓 Gratis
+
+**Ulemper:**
+- 📱 Kun én enhet
+- 🗑️ Kan slettes av bruker
+- 💾 Begrenset størrelse (~5-10MB)
+
+#### Firestore (Cloud Backup)
+
+**Hva lagres:**
+- Aktiv kamp (`/users/{userId}/matches/active`)
+- Avsluttede kamper (`/users/{userId}/matches/{matchId}`)
+
+**Hva lagres IKKE (KRITISK ISSUE):**
+- ❌ `savedTeams[]` - Lagrede spillerstall
+- ❌ `matchMode`, `shotRegistrationMode`, `timerConfig` - Brukerpreferanser
+
+**Strategi:**
+- Debounced save (1000ms) for aktiv kamp
+- Immediate save ved kamp ferdig
+- Load ved login/auth state change
+
+**Fordeler:**
+- ☁️ Cloud backup
+- 📱 Cross-device (potensielt)
+- 👥 Deling (potensielt)
+- ♾️ Ubegrenset størrelse
+
+**Ulemper:**
+- 💰 Kostnader (read/write operations)
+- 🌐 Krever internett
+- ⏱️ Asynkron (latency)
+
+### Synkroniseringsflyt
+
+**Save Flow:**
+```
+User Action
+    ↓
+saveToLocalStorage() [300ms debounce]
+    ↓
+localStorage.setItem('handballApp', JSON.stringify(APP))
+    ↓
+saveMatchToFirestoreDebounced() [1000ms debounce]
+    ↓
+Firestore: /users/{userId}/matches/active
+```
+
+**Load Flow:**
+```
+Firebase Auth
+    ↓
+initAuthStateObserver()
+    ↓
+migrateLocalStorageToFirestore() [første gang]
+    ↓
+syncFromFirestore()
+    ↓
+Merge: Local + Firestore data
+    ↓
+render()
+```
+
+**Merge Strategy:**
+- Events: Merge by ID (Map-based deduplication)
+- Players/Opponents: Prefer local if exists
+- Match info: Prefer local if modified recently
+- Conflicts resolved by newest timestamp
+
+### Kjente Problemer
+
+Se **STORAGE-ANALYSIS-REPORT.md** for detaljer om:
+- Lagrede spillerstall synkroniseres IKKE (KRITISK)
+- Brukerpreferanser synkroniseres IKKE (MEDIUM)
+
+---
+
+## 15. SIKKERHETSARKITEKTUR
+
+### Firebase Security Rules
+
+**Firestore Rules (firestore.rules):**
+```
+match /users/{userId} {
+  allow read, write: if request.auth.uid == userId;
+
+  match /matches/{matchId} {
+    allow read, write: if request.auth.uid == userId;
+  }
+}
+```
+
+**Prinsipper:**
+- Brukere kan kun lese/skrive egne data
+- Match data isolert per bruker
+- Ingen public data
+
+### Input Validation
+
+**Email Validation:**
+- Regex: `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`
+- Required field check
+
+**Password Validation:**
+- Minimum 8 characters
+- Must contain uppercase letter
+- Must contain lowercase letter
+- Must contain number
+
+**Player Input:**
+- Number: 1-99
+- Name: Required, trimmed
+- Duplicate number check
+
+### XSS Protection
+
+All user input is escaped when rendering:
+- HTML special characters escaped
+- No `innerHTML` with user data unless sanitized
+- Use textContent for user-provided strings
+
+### Data Sanitization
+
+**File Import:**
+- JSON: `JSON.parse()` with try-catch
+- CSV/TXT: Line-by-line parsing with validation
+- Race condition lock: `APP.isImportingFile`
+
+**Se SECURITY_RULES.md for fullstendige detaljer.**
+
+---
+
+## 16. YTELSESOPTIMALISERING
+
+### 1. Statistics Caching
+
+**Problem:** Recalculating stats on every render is expensive
+
+**Solution:** Cache calculations with versioned keys
+
+```javascript
+PERFORMANCE.getCachedStats(key, calculator);
+```
+
+**Cache Invalidation:**
+- When events change
+- When players change
+- When cache size exceeds limit (500 entries)
+
+### 2. Debounced Storage
+
+**Problem:** Writing to localStorage/Firestore on every state change is slow
+
+**Solution:** Debounced writes
+
+- **localStorage:** 300ms debounce
+- **Firestore:** 1000ms debounce
+
+**Exceptions:** Immediate save for critical operations
+
+### 3. Selective DOM Updates
+
+**Problem:** Full page re-render is expensive
+
+**Solution:** Update only affected parts
+
+- Modal content updates without full re-render
+- Statistics table updates without full re-render
+- Goal visualization updates without full re-render
+
+### 4. Event Delegation
+
+**Problem:** Attaching individual listeners to many buttons is slow
+
+**Solution:** Single listener on document body
+
+### 5. ID Generation Optimization
+
+**Problem:** Generating unique IDs with collision detection is slow
+
+**Solution:** Timestamp + counter approach
+
+```javascript
+generateUniqueId() {
+  return Date.now() + APP._idCounter++;
+}
+```
+
+---
+
+## 17. FREMTIDIG ARKITEKTUR
+
+### Fase 2: Full Cloud Sync
+
+**Mål:** Synkroniser ALL data til Firestore
+
+**Implementere:**
+
+1. **Team Rosters Collection:**
+```
+/users/{userId}/teamRosters/{rosterId}
+{
+  id, name, players[], updatedAt
+}
+```
+
+2. **User Preferences Document:**
+```
+/users/{userId}/settings
+{
+  preferences: {
+    matchMode: 'simple' | 'advanced',
+    shotRegistrationMode: 'simple' | 'detailed',
+    timerConfig: { halfLength: 20 | 25 | 30 }
+  }
+}
+```
+
+3. **Sync Functions:**
+- `saveTeamRostersToFirestore()`
+- `loadTeamRostersFromFirestore()`
+- `saveUserPreferencesToFirestore()`
+- `loadUserPreferencesFromFirestore()`
+
+**Benefits:**
+- ✅ Full cross-device sync
+- ✅ No data loss on device switch
+- ✅ Consistent user experience
+
+### Fase 3: Advanced Analytics
+
+**Mål:** Advanced statistics and insights
+
+**Features:**
+- Sesongstatistikk
+- Spillersammenligning
+- Trendanalyse
+- Varmekart (heatmaps)
+- Shot efficiency by position/type
+- Defensive patterns
+
+### Fase 4: Team Collaboration
+
+**Mål:** Multi-user access and collaboration
+
+**Features:**
+- Dele kamper med trenerteam
+- Forskjellige roller (admin, coach, analyst)
+- Real-time collaboration
+- Kommentarer og notater
+
+---
+
+## 18. ARKITEKTUR-INSIGHTS
 
 ### Styrker
 
@@ -1032,6 +1780,16 @@ sequenceDiagram
    - Enkel invalidering (increment version)
    - Lazy evaluation av stats
 
+6. **Modular Structure**
+   - Clear separation of concerns
+   - Easy to locate functionality
+   - Testable units
+
+7. **Progressive Disclosure**
+   - Adaptive UI based on mode
+   - Mobile-optimized flows
+   - Reduced cognitive load
+
 ### Svakheter
 
 1. **Global State**
@@ -1055,6 +1813,11 @@ sequenceDiagram
    - Debounced saves kan miste data
    - Timing issues ved rask input
 
+6. **Incomplete Cloud Sync**
+   - Team rosters not synced
+   - User preferences not synced
+   - Potential data loss on device switch
+
 ### Forbedringspotensial
 
 1. Introduser state setter-funksjoner med validering
@@ -1063,9 +1826,50 @@ sequenceDiagram
 4. Legg til TypeScript (gradvis migrasjon)
 5. Implementer konfliktløsning for Firestore sync
 6. Legg til comprehensive error handling
+7. Complete cloud sync implementation (Fase 2)
+8. Add comprehensive test coverage
+9. Implement optimistic updates for better UX
+10. Add offline queue for Firestore writes
 
 ---
 
-**Dokument versjon:** 1.0
-**Sist oppdatert:** 2026-01-12
+## Konklusjon
+
+Handball Analytics følger en moderne, modular arkitektur med klar separasjon av ansvar. Hybrid storage-modellen gir både offline-støtte og cloud backup. Systemet er bygget for skalerbarhet med god ytelse selv ved mange registreringer.
+
+**Styrker:**
+- ✅ Modular struktur
+- ✅ Clear separation of concerns
+- ✅ Offline-first med cloud backup
+- ✅ Progressive disclosure for bedre UX
+- ✅ Performance optimizations
+- ✅ Comprehensive security rules
+- ✅ Visuell dokumentasjon (Mermaid)
+- ✅ Detaljerte implementasjonsdetaljer
+
+**Kjente Begrensninger:**
+- ❌ Lagrede spillerstall ikke synkronisert (se STORAGE-ANALYSIS-REPORT.md)
+- ❌ Brukerpreferanser ikke synkronisert
+- ❌ Global state med begrenset innkapsling
+- ❌ Ingen TypeScript
+
+**Neste Steg:**
+1. Implementer full Firestore sync (Fase 2)
+2. Legg til comprehensive test coverage
+3. Implementer advanced analytics (Fase 3)
+4. Vurder team collaboration features (Fase 4)
+5. Gradvis TypeScript migrasjon
+6. Refaktorer events.js til moduler
+
+**Se også:**
+- **DEVELOPMENT_RULES.md** - Regler for kodeendringer (RED/YELLOW/GREEN zones)
+- **SECURITY_RULES.md** - Sikkerhet, autentisering, og validering
+- **TEST_GUIDE.md** - Testing guide og best practices
+- **STORAGE-ANALYSIS-REPORT.md** - Detaljert analyse av lagringsarkitektur
+
+---
+
+**Dokument versjon:** 3.2 (Merged)
+**Sist oppdatert:** 2026-01-20
 **Laget av:** Claude Code Agent
+**Kombinerer:** v3.0 (main) + v3.1 (feature branch)
