@@ -46,6 +46,16 @@ service cloud.firestore {
       }
 
       // ============================================
+      // TEAM ROSTERS (saved player lists)
+      // ============================================
+
+      match /teamRosters/{rosterId} {
+        // Users can only read and write their own team rosters
+        // rosterId is the unique ID of the saved roster
+        allow read, write: if isOwner(userId);
+      }
+
+      // ============================================
       // DEBUG LOGS (development/staging only)
       // ============================================
 

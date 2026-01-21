@@ -277,6 +277,16 @@ export async function migrateLocalStorageToFirestore() {
       migratedCount++;
     }
 
+    // Migrate team rosters
+    if (APP.savedTeams && APP.savedTeams.length > 0) {
+      console.log(`📦 Migrating ${APP.savedTeams.length} team rosters...`);
+
+      for (const team of APP.savedTeams) {
+        await saveTeamRosterToFirestore(team);
+        migratedCount++;
+      }
+    }
+
     // Mark migration as complete
     await db.collection('users').doc(userId).set(
       {
@@ -286,10 +296,157 @@ export async function migrateLocalStorageToFirestore() {
       { merge: true }
     );
 
-    console.log(`✅ Migration complete! Migrated ${migratedCount} matches to Firestore`);
+    console.log(`✅ Migration complete! Migrated ${migratedCount} items to Firestore`);
     return true;
   } catch (error) {
     console.error('❌ Error during migration:', error);
+    return false;
+  }
+}
+
+// ============================================
+// TEAM ROSTER OPERATIONS
+// ============================================
+
+/**
+ * Save a team roster to Firestore
+ * @param {Object} team - Team roster object with id, name, players
+ * @returns {Promise<boolean>} Success status
+ */
+export async function saveTeamRosterToFirestore(team) {
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot save team roster: No user logged in');
+    return false;
+  }
+
+  if (!team || !team.id) {
+    console.warn('⚠️ Invalid team data - missing ID');
+    return false;
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    const teamData = {
+      id: team.id,
+      name: team.name || 'Ukjent lag',
+      players: team.players || [],
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      ownerId: userId,
+    };
+
+    await db
+      .collection('users')
+      .doc(userId)
+      .collection('teamRosters')
+      .doc(team.id.toString())
+      .set(teamData, { merge: true });
+
+    console.log('✅ Team roster saved to Firestore:', team.name);
+    return true;
+  } catch (error) {
+    console.error('❌ Error saving team roster to Firestore:', error);
+    return false;
+  }
+}
+
+/**
+ * Save all team rosters to Firestore
+ * @returns {Promise<boolean>} Success status
+ */
+export async function saveAllTeamRostersToFirestore() {
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot save team rosters: No user logged in');
+    return false;
+  }
+
+  if (!APP.savedTeams || APP.savedTeams.length === 0) {
+    console.log('ℹ️ No team rosters to save');
+    return true;
+  }
+
+  try {
+    console.log(`📦 Saving ${APP.savedTeams.length} team rosters to Firestore...`);
+    let savedCount = 0;
+
+    for (const team of APP.savedTeams) {
+      const success = await saveTeamRosterToFirestore(team);
+      if (success) {
+        savedCount++;
+      }
+    }
+
+    console.log(`✅ Saved ${savedCount}/${APP.savedTeams.length} team rosters to Firestore`);
+    return savedCount === APP.savedTeams.length;
+  } catch (error) {
+    console.error('❌ Error saving team rosters:', error);
+    return false;
+  }
+}
+
+/**
+ * Load all team rosters from Firestore
+ * @returns {Promise<Array>} Array of team roster objects
+ */
+export async function loadTeamRostersFromFirestore() {
+  if (!auth.currentUser) {
+    console.log('ℹ️ No user logged in, skipping team rosters load');
+    return [];
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    const rostersSnapshot = await db
+      .collection('users')
+      .doc(userId)
+      .collection('teamRosters')
+      .get();
+
+    const rosters = [];
+    rostersSnapshot.forEach((doc) => {
+      const data = doc.data();
+      rosters.push({
+        id: data.id,
+        name: data.name,
+        players: data.players || [],
+        updatedAt: data.updatedAt,
+      });
+    });
+
+    // Sort by name for consistent display
+    rosters.sort((a, b) => a.name.localeCompare(b.name));
+
+    console.log(`✅ Loaded ${rosters.length} team rosters from Firestore`);
+    return rosters;
+  } catch (error) {
+    console.error('❌ Error loading team rosters from Firestore:', error);
+    return [];
+  }
+}
+
+/**
+ * Delete a team roster from Firestore
+ * @param {number|string} teamId - Team roster ID
+ * @returns {Promise<boolean>} Success status
+ */
+export async function deleteTeamRosterFromFirestore(teamId) {
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot delete team roster: No user logged in');
+    return false;
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    await db
+      .collection('users')
+      .doc(userId)
+      .collection('teamRosters')
+      .doc(teamId.toString())
+      .delete();
+
+    console.log('✅ Team roster deleted from Firestore:', teamId);
+    return true;
+  } catch (error) {
+    console.error('❌ Error deleting team roster from Firestore:', error);
     return false;
   }
 }
@@ -391,6 +548,29 @@ export async function syncFromFirestore() {
     });
 
     APP.completedMatches = Array.from(matchMap.values());
+
+    // Load and merge team rosters
+    const firestoreRosters = await loadTeamRostersFromFirestore();
+    const localRosters = APP.savedTeams || [];
+
+    // Merge team rosters by ID (Firestore is source of truth)
+    const rosterMap = new Map();
+
+    // Add local rosters first
+    localRosters.forEach((roster) => {
+      rosterMap.set(roster.id, roster);
+    });
+
+    // Add/overwrite with Firestore rosters
+    firestoreRosters.forEach((roster) => {
+      rosterMap.set(roster.id, roster);
+    });
+
+    APP.savedTeams = Array.from(rosterMap.values());
+
+    if (firestoreRosters.length > 0) {
+      console.log(`✅ Synced ${firestoreRosters.length} team rosters from Firestore`);
+    }
 
     console.log('✅ Sync complete');
     return true;
