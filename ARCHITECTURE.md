@@ -1513,9 +1513,9 @@ Systemet bruker en **hybrid lagringsmodell** med localStorage som primær lagrin
 **Hva lagres:**
 - Aktiv kamp (`/users/{userId}/matches/active`)
 - Avsluttede kamper (`/users/{userId}/matches/{matchId}`)
+- ✅ Lagrede spillerstall (`/users/{userId}/teamRosters/{rosterId}`) - **IMPLEMENTERT 2026-01-21**
 
 **Hva lagres IKKE (KRITISK ISSUE):**
-- ❌ `savedTeams[]` - Lagrede spillerstall
 - ❌ `matchMode`, `shotRegistrationMode`, `timerConfig` - Brukerpreferanser
 
 **Strategi:**
@@ -1573,8 +1573,8 @@ render()
 ### Kjente Problemer
 
 Se **STORAGE-ANALYSIS-REPORT.md** for detaljer om:
-- Lagrede spillerstall synkroniseres IKKE (KRITISK)
-- Brukerpreferanser synkroniseres IKKE (MEDIUM)
+- ✅ Lagrede spillerstall synkroniseres nå (Fixed 2026-01-21)
+- ❌ Brukerpreferanser synkroniseres IKKE (MEDIUM) - Gjenstår for å fullføre Fase 2
 
 ---
 
@@ -1588,6 +1588,10 @@ match /users/{userId} {
   allow read, write: if request.auth.uid == userId;
 
   match /matches/{matchId} {
+    allow read, write: if request.auth.uid == userId;
+  }
+
+  match /teamRosters/{rosterId} {
     allow read, write: if request.auth.uid == userId;
   }
 }
@@ -1697,17 +1701,26 @@ generateUniqueId() {
 
 **Mål:** Synkroniser ALL data til Firestore
 
-**Implementere:**
+**Status:** 🟡 DELVIS FULLFØRT (50% - Team Rosters implementert 2026-01-21)
 
-1. **Team Rosters Collection:**
+**1. Team Rosters Collection:** ✅ **FULLFØRT 2026-01-21**
 ```
 /users/{userId}/teamRosters/{rosterId}
 {
-  id, name, players[], updatedAt
+  id, name, players[], updatedAt, ownerId
 }
 ```
 
-2. **User Preferences Document:**
+**Implementerte funksjoner:**
+- ✅ `saveTeamRosterToFirestore(team)` - Lagre enkelt spillerstall
+- ✅ `saveAllTeamRostersToFirestore()` - Lagre alle spillerstall
+- ✅ `loadTeamRostersFromFirestore()` - Laste spillerstall fra cloud
+- ✅ `deleteTeamRosterFromFirestore(teamId)` - Slette spillerstall
+- ✅ Integrert i `syncFromFirestore()` - Automatisk merge ved innlogging
+- ✅ Integrert i `migrateLocalStorageToFirestore()` - Migrering av eksisterende data
+- ✅ Security rules implementert i `firestore.rules`
+
+**2. User Preferences Document:** ❌ **IKKE IMPLEMENTERT**
 ```
 /users/{userId}/settings
 {
@@ -1715,20 +1728,22 @@ generateUniqueId() {
     matchMode: 'simple' | 'advanced',
     shotRegistrationMode: 'simple' | 'detailed',
     timerConfig: { halfLength: 20 | 25 | 30 }
-  }
+  },
+  updatedAt: timestamp
 }
 ```
 
-3. **Sync Functions:**
-- `saveTeamRostersToFirestore()`
-- `loadTeamRostersFromFirestore()`
-- `saveUserPreferencesToFirestore()`
-- `loadUserPreferencesFromFirestore()`
+**Funksjoner som må implementeres:**
+- ❌ `saveUserPreferencesToFirestore()` - Lagre preferanser
+- ❌ `loadUserPreferencesFromFirestore()` - Laste preferanser
+- ❌ Integrere i `syncFromFirestore()` - Laste ved innlogging
+- ❌ Automatisk save ved endring av preferanser
+- ❌ Security rules for settings collection
 
-**Benefits:**
-- ✅ Full cross-device sync
-- ✅ No data loss on device switch
-- ✅ Consistent user experience
+**Benefits når fullført:**
+- ✅ Full cross-device sync (DELVIS - kamper og team rosters synkroniseres)
+- ✅ No data loss on device switch (DELVIS - preferanser må fortsatt settes opp på hver enhet)
+- ✅ Consistent user experience (DELVIS)
 
 ### Fase 3: Advanced Analytics
 
@@ -1814,9 +1829,9 @@ generateUniqueId() {
    - Timing issues ved rask input
 
 6. **Incomplete Cloud Sync**
-   - Team rosters not synced
-   - User preferences not synced
-   - Potential data loss on device switch
+   - ✅ Team rosters now synced (Fixed 2026-01-21)
+   - ❌ User preferences not synced
+   - Potential data loss of preferences on device switch
 
 ### Forbedringspotensial
 
@@ -1826,7 +1841,7 @@ generateUniqueId() {
 4. Legg til TypeScript (gradvis migrasjon)
 5. Implementer konfliktløsning for Firestore sync
 6. Legg til comprehensive error handling
-7. Complete cloud sync implementation (Fase 2)
+7. Complete cloud sync implementation for user preferences (Fase 2 - 50% gjenstår)
 8. Add comprehensive test coverage
 9. Implement optimistic updates for better UX
 10. Add offline queue for Firestore writes
@@ -1848,15 +1863,15 @@ Handball Analytics følger en moderne, modular arkitektur med klar separasjon av
 - ✅ Detaljerte implementasjonsdetaljer
 
 **Kjente Begrensninger:**
-- ❌ Lagrede spillerstall ikke synkronisert (se STORAGE-ANALYSIS-REPORT.md)
-- ❌ Brukerpreferanser ikke synkronisert
+- ✅ Lagrede spillerstall nå synkronisert (Fixed 2026-01-21)
+- ❌ Brukerpreferanser ikke synkronisert (Fase 2 gjenstår)
 - ❌ Global state med begrenset innkapsling
 - ❌ Ingen TypeScript
 
 **Neste Steg:**
-1. Implementer full Firestore sync (Fase 2)
-2. Legg til comprehensive test coverage
-3. Implementer advanced analytics (Fase 3)
+1. Fullfør Firestore sync for brukerpreferanser (Fase 2 - 50% gjenstår)
+2. Implementer advanced analytics (Fase 3)
+3. Legg til comprehensive test coverage
 4. Vurder team collaboration features (Fase 4)
 5. Gradvis TypeScript migrasjon
 6. Refaktorer events.js til moduler
@@ -1869,7 +1884,9 @@ Handball Analytics følger en moderne, modular arkitektur med klar separasjon av
 
 ---
 
-**Dokument versjon:** 3.2 (Merged)
-**Sist oppdatert:** 2026-01-20
+**Dokument versjon:** 3.3 (Team Rosters Sync Implemented)
+**Sist oppdatert:** 2026-01-21
 **Laget av:** Claude Code Agent
-**Kombinerer:** v3.0 (main) + v3.1 (feature branch)
+**Endringer:**
+- v3.3 (2026-01-21): Implementert Firebase-synkronisering for team rosters (Fase 2 50% fullført)
+- v3.2 (2026-01-20): Merged v3.0 (main) + v3.1 (feature branch)
