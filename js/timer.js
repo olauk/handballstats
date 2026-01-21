@@ -93,7 +93,9 @@ export function getCurrentTimerTime() {
  */
 export function updateTimerDisplay() {
     const timerElement = document.getElementById('timerDisplay');
-    if (!timerElement) return;
+    if (!timerElement) {
+return;
+}
 
     const formattedTime = formatTime(APP.timerState.currentTime);
     const halfLengthSeconds = APP.timerConfig.halfLength * 60;

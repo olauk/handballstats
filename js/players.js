@@ -70,16 +70,24 @@ export function addPlayerToTempList(updatePlayersManagementModal) {
     }
 
     // Tøm feltene
-    if (numberInput) numberInput.value = '';
-    if (nameInput) nameInput.value = '';
-    if (isKeeperInput) isKeeperInput.checked = false;
+    if (numberInput) {
+numberInput.value = '';
+}
+    if (nameInput) {
+nameInput.value = '';
+}
+    if (isKeeperInput) {
+isKeeperInput.checked = false;
+}
 
     updatePlayersManagementModal();
 }
 
 export function editPlayerInTempList(playerId) {
     const player = APP.tempPlayersList.find(p => p.id === playerId);
-    if (!player) return;
+    if (!player) {
+return;
+}
 
     APP.editingPlayerId = playerId;
 
@@ -88,8 +96,12 @@ export function editPlayerInTempList(playerId) {
     const nameInput = document.getElementById('playerNameInput');
     const isKeeperInput = document.getElementById('playerIsKeeperInput');
 
-    if (numberInput) numberInput.value = player.number;
-    if (nameInput) nameInput.value = player.name;
+    if (numberInput) {
+numberInput.value = player.number;
+}
+    if (nameInput) {
+nameInput.value = player.name;
+}
     if (isKeeperInput && APP.managingTeam === 'players') {
         isKeeperInput.checked = player.isKeeper || false;
     }
@@ -103,9 +115,15 @@ export function removePlayerFromTempList(playerId, updatePlayersManagementModal)
         const numberInput = document.getElementById('playerNumberInput');
         const nameInput = document.getElementById('playerNameInput');
         const isKeeperInput = document.getElementById('playerIsKeeperInput');
-        if (numberInput) numberInput.value = '';
-        if (nameInput) nameInput.value = '';
-        if (isKeeperInput) isKeeperInput.checked = false;
+        if (numberInput) {
+numberInput.value = '';
+}
+        if (nameInput) {
+nameInput.value = '';
+}
+        if (isKeeperInput) {
+isKeeperInput.checked = false;
+}
     }
     updatePlayersManagementModal();
 }

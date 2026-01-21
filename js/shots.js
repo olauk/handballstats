@@ -164,12 +164,16 @@ export function renderShotPopupContent() {
     let selectionSummary = '';
     if (APP.selectedResult || APP.selectedShooter || APP.selectedAttackType || APP.selectedShotPosition || APP.selectedAssist) {
         const parts = [];
-        if (APP.selectedResult) parts.push(`Resultat: ${APP.selectedResult === 'mål' ? '⚽ Mål' : '🧤 Redning'}`);
+        if (APP.selectedResult) {
+parts.push(`Resultat: ${APP.selectedResult === 'mål' ? '⚽ Mål' : '🧤 Redning'}`);
+}
         if (APP.selectedShooter) {
             const shooter = playersList.find(p => p.id === APP.selectedShooter);
             parts.push(`Skytter: #${shooter?.number} ${shooter?.name}`);
         }
-        if (APP.selectedAttackType) parts.push(`Angrep: ${APP.selectedAttackType === 'etablert' ? '🏃 Etablert' : '⚡ Kontring'}`);
+        if (APP.selectedAttackType) {
+parts.push(`Angrep: ${APP.selectedAttackType === 'etablert' ? '🏃 Etablert' : '⚡ Kontring'}`);
+}
         if (APP.selectedShotPosition) {
             const posLabels = { '9m': '9m', '6m': '6m', '7m': '7m', 'ka': 'KA' };
             parts.push(`Posisjon: ${posLabels[APP.selectedShotPosition]}`);
@@ -190,11 +194,11 @@ export function renderShotPopupContent() {
         stepNumber = isOutside ? 1 : 2;
         currentStep = `Steg ${stepNumber}: Velg spiller som avfyrte skuddet`;
     } else if (needsAttackType) {
-        currentStep = `Steg 3: Velg angrepstype`;
+        currentStep = 'Steg 3: Velg angrepstype';
     } else if (needsShotPosition) {
-        currentStep = `Steg 4: Velg skuddposisjon`;
+        currentStep = 'Steg 4: Velg skuddposisjon';
     } else if (needsAssist) {
-        currentStep = `Steg 5 (valgfritt): Velg assist, eller fortsett uten assist`;
+        currentStep = 'Steg 5 (valgfritt): Velg assist, eller fortsett uten assist';
     }
 
     return `
@@ -372,7 +376,7 @@ export function registerShot(playerId, closeModal, updateGoalVisualization, upda
 
             // Beregn total kamptid (legg til 1. omgangs lengde for 2. omgang)
             let totalMinutes = timerTime.minutes;
-            let totalSeconds = timerTime.seconds;
+            const totalSeconds = timerTime.seconds;
 
             if (APP.currentHalf === 2) {
                 totalMinutes += APP.timerConfig.halfLength;
@@ -519,7 +523,9 @@ export function updateGoalVisualization() {
     }
 
     const goalArea = document.getElementById('goalArea');
-    if (!goalArea) return;
+    if (!goalArea) {
+return;
+}
 
     // Get all current shot markers
     const shots = APP.events.filter(e =>
@@ -582,7 +588,9 @@ export function updateGoalVisualization() {
 
 export function registerTechnicalError(playerId, closeModal, updateStatisticsOnly) {
     const player = APP.players.find(p => p.id === playerId);
-    if (!player) return false;
+    if (!player) {
+return false;
+}
 
     const event = {
         id: Date.now(),
@@ -599,7 +607,7 @@ export function registerTechnicalError(playerId, closeModal, updateStatisticsOnl
 
         // Beregn total kamptid (legg til 1. omgangs lengde for 2. omgang)
         let totalMinutes = timerTime.minutes;
-        let totalSeconds = timerTime.seconds;
+        const totalSeconds = timerTime.seconds;
 
         if (APP.currentHalf === 2) {
             totalMinutes += APP.timerConfig.halfLength;

@@ -371,17 +371,20 @@ describe('Match Management', () => {
     });
 
     it('skal lagre til localStorage (debounced)', async () => {
+      const { saveToLocalStorage } = await import('../../js/storage.js');
+
       continueMatchSetup();
 
-      expect(global.saveToLocalStorage).toHaveBeenCalledTimes(1);
+      expect(saveToLocalStorage).toHaveBeenCalledTimes(1);
     });
 
     it('skal bruke debounced save (ikke immediate)', async () => {
-      const { saveToLocalStorageImmediate } = await import('../../js/storage.js');
+      const { saveToLocalStorage, saveToLocalStorageImmediate } =
+        await import('../../js/storage.js');
 
       continueMatchSetup();
 
-      expect(global.saveToLocalStorage).toHaveBeenCalled();
+      expect(saveToLocalStorage).toHaveBeenCalled();
       expect(saveToLocalStorageImmediate).not.toHaveBeenCalled();
     });
 
@@ -447,20 +450,21 @@ describe('Match Management', () => {
     });
 
     it('startNewMatch bruker immediate save, continueMatchSetup bruker debounced', async () => {
-      const { saveToLocalStorageImmediate } = await import('../../js/storage.js');
+      const { saveToLocalStorage, saveToLocalStorageImmediate } =
+        await import('../../js/storage.js');
 
-      global.saveToLocalStorage.mockClear();
+      saveToLocalStorage.mockClear();
       saveToLocalStorageImmediate.mockClear();
 
       startNewMatch();
       expect(saveToLocalStorageImmediate).toHaveBeenCalled();
-      expect(global.saveToLocalStorage).not.toHaveBeenCalled();
+      expect(saveToLocalStorage).not.toHaveBeenCalled();
 
-      global.saveToLocalStorage.mockClear();
+      saveToLocalStorage.mockClear();
       saveToLocalStorageImmediate.mockClear();
 
       continueMatchSetup();
-      expect(global.saveToLocalStorage).toHaveBeenCalled();
+      expect(saveToLocalStorage).toHaveBeenCalled();
       expect(saveToLocalStorageImmediate).not.toHaveBeenCalled();
     });
   });

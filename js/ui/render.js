@@ -11,7 +11,9 @@ import { renderHelpPage } from './help.js';
 
 export function render(attachEventListeners, renderFunction) {
     const app = document.getElementById('app');
-    if (!app) return;
+    if (!app) {
+return;
+}
 
     console.log('🎨 Rendering page:', APP.page); // DEBUG
 

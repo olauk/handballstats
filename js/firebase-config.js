@@ -11,12 +11,12 @@ if (typeof firebase === 'undefined') {
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAdsBb-RR200g_KVfV4t0dbRhk7dfWseG8",
-  authDomain: "handballstats-c80f3.firebaseapp.com",
-  projectId: "handballstats-c80f3",
-  storageBucket: "handballstats-c80f3.firebasestorage.app",
-  messagingSenderId: "748340756980",
-  appId: "1:748340756980:web:0d819c771d6bcde824f9a1"
+  apiKey: 'AIzaSyAdsBb-RR200g_KVfV4t0dbRhk7dfWseG8',
+  authDomain: 'handballstats-c80f3.firebaseapp.com',
+  projectId: 'handballstats-c80f3',
+  storageBucket: 'handballstats-c80f3.firebasestorage.app',
+  messagingSenderId: '748340756980',
+  appId: '1:748340756980:web:0d819c771d6bcde824f9a1'
 };
 
 // Initialize Firebase (using compat version for easier integration)

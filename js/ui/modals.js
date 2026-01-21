@@ -27,7 +27,9 @@ export function showPlayerShotDetails(playerId, isOpponent = false) {
     const players = isOpponent ? getCurrentOpponents() : getCurrentPlayers();
     const player = players.find(p => p.id === playerId);
 
-    if (!player) return;
+    if (!player) {
+return;
+}
 
     const events = getCurrentEvents();
     const playerShots = events.filter(e => {
@@ -53,7 +55,9 @@ export function showPlayerShotDetails(playerId, isOpponent = false) {
 export function showKeeperShotDetails(keeperId) {
     const players = getCurrentPlayers();
     const keeper = players.find(p => p.id === keeperId);
-    if (!keeper) return;
+    if (!keeper) {
+return;
+}
 
     const events = getCurrentEvents();
     const keeperShots = events.filter(e =>
@@ -93,7 +97,9 @@ export function updateShotDetailsModal() {
 
 // Separer innholdet i shotDetails modal
 export function renderShotDetailsPopupContent() {
-    if (!APP.shotDetailsData) return '';
+    if (!APP.shotDetailsData) {
+return '';
+}
 
     const { player, shots, isOpponent, isKeeper } = APP.shotDetailsData;
     const goals = shots.filter(s => s.result === 'mål').length;
@@ -196,7 +202,9 @@ export function renderShotDetailsPopupContent() {
 
 export function updatePlayersManagementModal() {
     const modal = document.getElementById('playersManagementPopup');
-    if (!modal) return;
+    if (!modal) {
+return;
+}
 
     const modalContent = modal.querySelector('.modal-content');
     if (modalContent) {
@@ -206,7 +214,9 @@ export function updatePlayersManagementModal() {
 
 export function updateTeamRosterEditModal() {
     const modal = document.getElementById('teamRosterEditModal');
-    if (!modal) return;
+    if (!modal) {
+return;
+}
 
     const modalContent = modal.querySelector('.modal-content');
     if (modalContent) {
@@ -242,7 +252,9 @@ export function updateStatisticsOnly(renderStatistics, attachStatisticsEventList
         }
     });
 
-    if (!statsCard) return;
+    if (!statsCard) {
+return;
+}
 
     // Opprett nytt statistikk-innhold
     const tempDiv = document.createElement('div');

@@ -162,7 +162,9 @@ export function updateEventFeed() {
     }
 
     const parentCard = eventFeedContainer.closest('.card');
-    if (!parentCard) return;
+    if (!parentCard) {
+return;
+}
 
     // Re-render the entire event feed card
     const tempDiv = document.createElement('div');

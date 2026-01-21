@@ -18,7 +18,9 @@ export function loadOpponentsFromFile() {
 
 export function handlePlayersFileUpload(event, updatePlayersManagementModal, showModal) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+return;
+}
 
     // Race Condition Fix: Block parallel file imports
     if (APP.isImportingFile) {
@@ -79,7 +81,9 @@ export function handlePlayersFileUpload(event, updatePlayersManagementModal, sho
 
 export function handleOpponentsFileUpload(event, updatePlayersManagementModal, showModal) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+return;
+}
 
     // Race Condition Fix: Block parallel file imports
     if (APP.isImportingFile) {

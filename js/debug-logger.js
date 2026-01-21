@@ -142,7 +142,9 @@ export async function logAppEvent(eventType, data = {}) {
 
     try {
         const user = auth.currentUser;
-        if (!user) return;
+        if (!user) {
+return;
+}
 
         const logEntry = {
             clientTimestamp: new Date().toISOString(),
@@ -313,7 +315,9 @@ export async function exportDebugLogs(limit = 500) {
 export async function cleanOldLogs(daysToKeep = 30) {
     try {
         const user = auth.currentUser;
-        if (!user) return;
+        if (!user) {
+return;
+}
 
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);

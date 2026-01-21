@@ -10,7 +10,7 @@ import { saveMatchToFirestoreDebounced } from './firestore-storage.js';
 // This queue system ensures no data is lost during rapid successive saves
 // All save requests are queued and processed in batches every 300ms
 
-let saveQueue = {
+const saveQueue = {
     pending: false,          // Is there a pending save request?
     isProcessing: false,     // Is a save currently being processed?
     lastError: null          // Last error that occurred during save

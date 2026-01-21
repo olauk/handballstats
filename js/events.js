@@ -79,13 +79,17 @@ export function setupGlobalEventListeners(render) {
     // This is attached to document ONCE and never removed
     document.addEventListener('click', (e) => {
         const button = e.target.closest('[data-action]');
-        if (!button) return;
+        if (!button) {
+return;
+}
 
         const action = button.dataset.action;
 
         switch(action) {
             case 'logout':
-                if (handleLogout()) render();
+                if (handleLogout()) {
+render();
+}
                 break;
             case 'startNewMatch':
                 startNewMatch();
@@ -111,7 +115,9 @@ export function setupGlobalEventListeners(render) {
                 removePlayerFromTempList(parseInt(button.dataset.playerId), updatePlayersManagementModal);
                 break;
             case 'savePlayers':
-                if (savePlayersList(closeModal)) render();
+                if (savePlayersList(closeModal)) {
+render();
+}
                 break;
             case 'cancelPlayers':
                 cancelPlayersManagement(closeModal);
@@ -131,7 +137,7 @@ export function setupGlobalEventListeners(render) {
                 saveToLocalStorage();
                 render();
                 break;
-            case 'setHalf':
+            case 'setHalf': {
                 const newHalf = parseInt(button.dataset.half);
 
                 // Hvis vi bytter til 2. omgang i avansert modus
@@ -146,9 +152,9 @@ export function setupGlobalEventListeners(render) {
                         const timeRemaining = `${minutesRemaining}:${String(secondsRemaining).padStart(2, '0')}`;
 
                         const confirmSwitch = confirm(
-                            `⚠️ Omgangen er ikke ferdig!\n\n` +
+                            '⚠️ Omgangen er ikke ferdig!\n\n' +
                             `Det er ${timeRemaining} igjen av omgangen.\n\n` +
-                            `Er du sikker på at du vil gå til 2. omgang?`
+                            'Er du sikker på at du vil gå til 2. omgang?'
                         );
 
                         if (!confirmSwitch) {
@@ -169,12 +175,13 @@ export function setupGlobalEventListeners(render) {
                 saveToLocalStorage();
                 render();
                 break;
+            }
             case 'setMode':
                 APP.mode = button.dataset.mode;
                 saveToLocalStorage();
                 render();
                 break;
-            case 'showTechnicalPopup':
+            case 'showTechnicalPopup': {
                 const technicalModal = document.getElementById('technicalPopup');
                 if (technicalModal) {
                     const modalContent = technicalModal.querySelector('.modal-content');
@@ -184,6 +191,7 @@ export function setupGlobalEventListeners(render) {
                 }
                 showModal('technicalPopup');
                 break;
+            }
             case 'closeTechnicalPopup':
                 closeModal('technicalPopup');
                 break;
@@ -242,10 +250,14 @@ export function setupGlobalEventListeners(render) {
                 // Optimalisert: Ikke re-render hele siden ved lukking av modal
                 break;
             case 'resetMatch':
-                if (resetMatch()) render();
+                if (resetMatch()) {
+render();
+}
                 break;
             case 'resetSetup':
-                if (resetSetup()) render();
+                if (resetSetup()) {
+render();
+}
                 break;
             case 'exportData':
                 exportData();
@@ -261,7 +273,9 @@ export function setupGlobalEventListeners(render) {
                 break;
             case 'finishMatch':
                 finishMatch().then(success => {
-                    if (success) render();
+                    if (success) {
+render();
+}
                 });
                 break;
             case 'viewHistory':
@@ -273,11 +287,15 @@ export function setupGlobalEventListeners(render) {
                 render();
                 break;
             case 'viewMatch':
-                if (viewCompletedMatch(parseInt(button.dataset.matchId))) render();
+                if (viewCompletedMatch(parseInt(button.dataset.matchId))) {
+render();
+}
                 break;
             case 'deleteMatch':
                 deleteCompletedMatch(parseInt(button.dataset.matchId)).then(success => {
-                    if (success) render();
+                    if (success) {
+render();
+}
                 });
                 break;
             case 'setViewMode':
@@ -345,9 +363,9 @@ export function setupGlobalEventListeners(render) {
                         const timeRemaining = `${minutesRemaining}:${String(secondsRemaining).padStart(2, '0')}`;
 
                         const confirmSwitch = confirm(
-                            `⚠️ Omgangen er ikke ferdig!\n\n` +
+                            '⚠️ Omgangen er ikke ferdig!\n\n' +
                             `Det er ${timeRemaining} igjen av omgangen.\n\n` +
-                            `Er du sikker på at du vil gå til 2. omgang?`
+                            'Er du sikker på at du vil gå til 2. omgang?'
                         );
 
                         if (!confirmSwitch) {
@@ -381,10 +399,14 @@ export function setupGlobalEventListeners(render) {
                 editTeamRoster(parseInt(button.dataset.teamId), updateTeamRosterEditModal, showModal);
                 break;
             case 'deleteTeamRoster':
-                if (deleteTeamRoster(parseInt(button.dataset.teamId))) render();
+                if (deleteTeamRoster(parseInt(button.dataset.teamId))) {
+render();
+}
                 break;
             case 'saveTeamRoster':
-                if (saveTeamRoster(closeModal)) render();
+                if (saveTeamRoster(closeModal)) {
+render();
+}
                 break;
             case 'closeTeamRosterEdit':
                 closeTeamRosterEdit(closeModal);

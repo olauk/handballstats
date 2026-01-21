@@ -20,7 +20,9 @@ export function createNewTeamRoster(updateModal, showModal) {
  */
 export function editTeamRoster(teamId, updateModal, showModal) {
     const team = APP.savedTeams.find(t => t.id === teamId);
-    if (!team) return;
+    if (!team) {
+return;
+}
 
     APP.editingTeamId = teamId;
     APP.tempPlayersList = JSON.parse(JSON.stringify(team.players));
@@ -34,7 +36,9 @@ export function editTeamRoster(teamId, updateModal, showModal) {
  */
 export function deleteTeamRoster(teamId) {
     const team = APP.savedTeams.find(t => t.id === teamId);
-    if (!team) return false;
+    if (!team) {
+return false;
+}
 
     if (confirm(`Er du sikker på at du vil slette laget "${team.name}"?\n\nDette vil fjerne laget og alle spillere permanent.`)) {
         APP.savedTeams = APP.savedTeams.filter(t => t.id !== teamId);
@@ -49,7 +53,9 @@ export function deleteTeamRoster(teamId) {
  */
 export function saveTeamRoster(closeModal) {
     const nameInput = document.getElementById('teamRosterNameInput');
-    if (!nameInput) return false;
+    if (!nameInput) {
+return false;
+}
 
     const teamName = nameInput.value.trim();
     if (!teamName) {
@@ -107,7 +113,9 @@ export function addPlayerToRoster(updateModal) {
  */
 export function editPlayerInRoster(playerId, updateModal) {
     const player = APP.tempPlayersList.find(p => p.id === playerId);
-    if (!player) return;
+    if (!player) {
+return;
+}
 
     APP.editingPlayerId = playerId;
     updateModal();
@@ -118,9 +126,15 @@ export function editPlayerInRoster(playerId, updateModal) {
         const nameInput = document.getElementById('rosterPlayerNameInput');
         const isKeeperInput = document.getElementById('rosterPlayerIsKeeperInput');
 
-        if (numberInput) numberInput.value = player.number;
-        if (nameInput) nameInput.value = player.name;
-        if (isKeeperInput) isKeeperInput.checked = player.isKeeper || false;
+        if (numberInput) {
+numberInput.value = player.number;
+}
+        if (nameInput) {
+nameInput.value = player.name;
+}
+        if (isKeeperInput) {
+isKeeperInput.checked = player.isKeeper || false;
+}
     }, 0);
 }
 
@@ -132,7 +146,9 @@ export function saveRosterPlayer(updateModal) {
     const nameInput = document.getElementById('rosterPlayerNameInput');
     const isKeeperInput = document.getElementById('rosterPlayerIsKeeperInput');
 
-    if (!numberInput || !nameInput || !isKeeperInput) return false;
+    if (!numberInput || !nameInput || !isKeeperInput) {
+return false;
+}
 
     const number = parseInt(numberInput.value);
     const name = nameInput.value.trim();
@@ -188,7 +204,9 @@ export function cancelRosterPlayerEdit(updateModal) {
  */
 export function loadRosterPlayersFile() {
     const fileInput = document.getElementById('rosterPlayersFileInput');
-    if (fileInput) fileInput.click();
+    if (fileInput) {
+fileInput.click();
+}
 }
 
 /**
@@ -196,7 +214,9 @@ export function loadRosterPlayersFile() {
  */
 export function handleRosterPlayersFileUpload(event, updateModal) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+return;
+}
 
     // Race Condition Fix: Block parallel file imports
     if (APP.isImportingFile) {
@@ -294,7 +314,9 @@ export function handleRosterPlayersFileUpload(event, updateModal) {
  */
 export function importTeamRosterToSetup(teamId, target, mergeMode) {
     const team = APP.savedTeams.find(t => t.id === teamId);
-    if (!team) return false;
+    if (!team) {
+return false;
+}
 
     // Clone players to avoid reference issues
     const clonedPlayers = JSON.parse(JSON.stringify(team.players)).map(p => ({
