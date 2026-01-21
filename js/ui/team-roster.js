@@ -4,7 +4,7 @@
 import { APP } from '../state.js';
 
 export function renderTeamRosterPage() {
-    return `
+  return `
         <div class="container">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
@@ -25,9 +25,13 @@ export function renderTeamRosterPage() {
                     Administrer dine lagrede lag med spillerstaller. Disse kan brukes når du setter opp en ny kamp.
                 </p>
 
-                ${APP.savedTeams.length > 0 ? `
+                ${
+                  APP.savedTeams.length > 0
+                    ? `
                     <div style="display: grid; gap: 1.5rem; margin-bottom: 2rem;">
-                        ${APP.savedTeams.map(team => `
+                        ${APP.savedTeams
+                          .map(
+                            (team) => `
                             <div style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 1.5rem; background: white;">
                                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                                     <div>
@@ -36,7 +40,7 @@ export function renderTeamRosterPage() {
                                         </h2>
                                         <p style="color: #6b7280;">
                                             ${team.players.length} spillere
-                                            ${team.players.filter(p => p.isKeeper).length > 0 ? `• ${team.players.filter(p => p.isKeeper).length} keeper(e)` : ''}
+                                            ${team.players.filter((p) => p.isKeeper).length > 0 ? `• ${team.players.filter((p) => p.isKeeper).length} keeper(e)` : ''}
                                         </p>
                                     </div>
                                     <div style="display: flex; gap: 0.5rem;">
@@ -49,23 +53,34 @@ export function renderTeamRosterPage() {
                                     </div>
                                 </div>
 
-                                ${team.players.length > 0 ? `
+                                ${
+                                  team.players.length > 0
+                                    ? `
                                     <div style="padding: 1rem; background: #eff6ff; border-radius: 0.5rem;">
                                         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                            ${team.players.map(player => `
+                                            ${team.players
+                                              .map(
+                                                (player) => `
                                                 <span style="padding: 0.5rem 1rem; background: white; border-radius: 0.5rem; border: 2px solid #3b82f6; font-weight: 600;">
                                                     #${player.number} ${player.name}${player.isKeeper ? ' 🧤' : ''}
                                                 </span>
-                                            `).join('')}
+                                            `
+                                              )
+                                              .join('')}
                                         </div>
                                     </div>
-                                ` : `
+                                `
+                                    : `
                                     <p style="color: #9ca3af; font-style: italic;">Ingen spillere lagt til ennå</p>
-                                `}
+                                `
+                                }
                             </div>
-                        `).join('')}
+                        `
+                          )
+                          .join('')}
                     </div>
-                ` : `
+                `
+                    : `
                     <div style="text-align: center; padding: 3rem; background: #f9fafb; border-radius: 12px; margin-bottom: 2rem;">
                         <div style="font-size: 4rem; margin-bottom: 1rem;">📋</div>
                         <h3 style="font-size: 1.25rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">
@@ -75,7 +90,8 @@ export function renderTeamRosterPage() {
                             Opprett ditt første lag med spillerstall for å komme i gang.
                         </p>
                     </div>
-                `}
+                `
+                }
 
                 <button class="btn btn-success" data-action="createNewTeamRoster" style="width: 100%; padding: 1rem; font-size: 1.125rem;">
                     + Opprett nytt lag
@@ -88,7 +104,7 @@ export function renderTeamRosterPage() {
 }
 
 export function renderTeamRosterEditModal() {
-    return `
+  return `
         <div id="teamRosterEditModal" class="modal hidden">
             <div class="modal-content"></div>
         </div>
@@ -96,14 +112,12 @@ export function renderTeamRosterEditModal() {
 }
 
 export function renderTeamRosterEditModalContent() {
-    const team = APP.editingTeamId
-        ? APP.savedTeams.find(t => t.id === APP.editingTeamId)
-        : null;
+  const team = APP.editingTeamId ? APP.savedTeams.find((t) => t.id === APP.editingTeamId) : null;
 
-    const teamName = team ? team.name : '';
-    const players = APP.tempPlayersList || [];
+  const teamName = team ? team.name : '';
+  const players = APP.tempPlayersList || [];
 
-    return `
+  return `
         <div class="modal-header">
             <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81;">
                 ${team ? 'Rediger lag' : 'Opprett nytt lag'}
@@ -132,10 +146,14 @@ export function renderTeamRosterEditModalContent() {
                 </h3>
             </div>
 
-            ${players.length > 0 ? `
+            ${
+              players.length > 0
+                ? `
                 <div style="padding: 1rem; background: #eff6ff; border-radius: 0.5rem; margin-bottom: 1rem; max-height: 300px; overflow-y: auto;">
                     <div style="display: grid; gap: 0.5rem;">
-                        ${players.map(player => `
+                        ${players
+                          .map(
+                            (player) => `
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: white; border-radius: 0.5rem; border: 2px solid #3b82f6;">
                                 <span style="font-weight: 600;">
                                     #${player.number} ${player.name}${player.isKeeper ? ' 🧤' : ''}
@@ -155,14 +173,20 @@ export function renderTeamRosterEditModalContent() {
                                     </button>
                                 </div>
                             </div>
-                        `).join('')}
+                        `
+                          )
+                          .join('')}
                     </div>
                 </div>
-            ` : `
+            `
+                : `
                 <p style="color: #6b7280; margin-bottom: 1rem;">Ingen spillere lagt til ennå</p>
-            `}
+            `
+            }
 
-            ${APP.editingPlayerId ? `
+            ${
+              APP.editingPlayerId
+                ? `
                 <div style="padding: 1.5rem; background: #fef3c7; border-radius: 0.5rem; border: 2px solid #f59e0b; margin-bottom: 1rem;">
                     <h4 style="font-weight: 700; margin-bottom: 1rem; color: #92400e;">
                         ${APP.editingPlayerId !== -1 ? 'Rediger spiller' : 'Legg til spiller'}
@@ -195,7 +219,8 @@ export function renderTeamRosterEditModalContent() {
                         </button>
                     </div>
                 </div>
-            ` : `
+            `
+                : `
                 <div class="grid-2" style="gap: 0.5rem;">
                     <button class="btn btn-primary" data-action="addPlayerToRoster" style="width: 100%;">
                         + Legg til spiller
@@ -205,7 +230,8 @@ export function renderTeamRosterEditModalContent() {
                     </button>
                 </div>
                 <input type="file" id="rosterPlayersFileInput" accept=".json,.txt,.csv" style="display: none;">
-            `}
+            `
+            }
         </div>
 
         <div style="display: flex; gap: 0.5rem;">

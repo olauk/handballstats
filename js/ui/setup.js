@@ -4,7 +4,7 @@
 import { APP } from '../state.js';
 
 export function renderSetupPage() {
-    return `
+  return `
         <div class="container">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
@@ -12,11 +12,15 @@ export function renderSetupPage() {
                         Oppsett av kamp
                     </h1>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        ${APP.savedTeams.length > 0 ? `
+                        ${
+                          APP.savedTeams.length > 0
+                            ? `
                             <button class="btn btn-blue" data-action="toggleImportMenu" style="padding: 0.5rem 1rem; position: relative;">
                                 ☰ Importer lag
                             </button>
-                        ` : ''}
+                        `
+                            : ''
+                        }
                         <button class="btn btn-secondary" data-action="backToHome" style="padding: 0.5rem 1rem;">
                             ← Tilbake
                         </button>
@@ -53,7 +57,9 @@ export function renderSetupPage() {
                            style="width: 100%; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem;">
                 </div>
 
-                ${APP.matchMode === 'advanced' ? `
+                ${
+                  APP.matchMode === 'advanced'
+                    ? `
                     <div class="mb-6" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 12px;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
                             <h2 style="font-size: 1.5rem; font-weight: 700; color: white; margin: 0;">
@@ -93,9 +99,13 @@ export function renderSetupPage() {
                             </button>
                         </div>
                     </div>
-                ` : ''}
+                `
+                    : ''
+                }
 
-                ${APP.matchMode === 'advanced' ? `
+                ${
+                  APP.matchMode === 'advanced'
+                    ? `
                     <div class="mb-6" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 1.5rem; border-radius: 12px;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
                             <h2 style="font-size: 1.5rem; font-weight: 700; color: white; margin: 0;">
@@ -128,26 +138,36 @@ export function renderSetupPage() {
                             </button>
                         </div>
                     </div>
-                ` : ''}
+                `
+                    : ''
+                }
 
                 <div class="mb-6">
                     <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
                         ${APP.homeTeam} - Spillere
                         ${APP.players.length > 0 ? `<span style="font-weight: 400; font-size: 1rem; color: #6b7280;">(${APP.players.length} spillere)</span>` : ''}
                     </h2>
-                    ${APP.players.length > 0 ? `
+                    ${
+                      APP.players.length > 0
+                        ? `
                         <div style="padding: 1rem; background: #eff6ff; border-radius: 0.5rem; margin-bottom: 1rem;">
                             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                ${APP.players.map(player => `
+                                ${APP.players
+                                  .map(
+                                    (player) => `
                                     <span style="padding: 0.5rem 1rem; background: white; border-radius: 0.5rem; border: 2px solid #3b82f6; font-weight: 600;">
                                         #${player.number} ${player.name}${player.isKeeper ? ' 🧤' : ''}
                                     </span>
-                                `).join('')}
+                                `
+                                  )
+                                  .join('')}
                             </div>
                         </div>
-                    ` : `
+                    `
+                        : `
                         <p style="color: #6b7280; margin-bottom: 1rem;">Ingen spillere lagt til ennå</p>
-                    `}
+                    `
+                    }
                     <div class="grid-2" style="gap: 0.5rem;">
                         <button class="btn btn-blue" data-action="managePlayers" style="width: 100%; font-size: 1.125rem;">
                             ${APP.players.length > 0 ? '✏️ Rediger spillere' : '+ Legg til spillere'}
@@ -164,19 +184,27 @@ export function renderSetupPage() {
                         ${APP.awayTeam} - Spillere
                         ${APP.opponents.length > 0 ? `<span style="font-weight: 400; font-size: 1rem; color: #6b7280;">(${APP.opponents.length} spillere)</span>` : ''}
                     </h2>
-                    ${APP.opponents.length > 0 ? `
+                    ${
+                      APP.opponents.length > 0
+                        ? `
                         <div style="padding: 1rem; background: #ffedd5; border-radius: 0.5rem; margin-bottom: 1rem;">
                             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                ${APP.opponents.map(opponent => `
+                                ${APP.opponents
+                                  .map(
+                                    (opponent) => `
                                     <span style="padding: 0.5rem 1rem; background: white; border-radius: 0.5rem; border: 2px solid #f97316; font-weight: 600;">
                                         #${opponent.number} ${opponent.name}
                                     </span>
-                                `).join('')}
+                                `
+                                  )
+                                  .join('')}
                             </div>
                         </div>
-                    ` : `
+                    `
+                        : `
                         <p style="color: #6b7280; margin-bottom: 1rem;">Ingen motstandere lagt til ennå</p>
-                    `}
+                    `
+                    }
                     <div class="grid-2" style="gap: 0.5rem;">
                         <button class="btn btn-orange" data-action="manageOpponents" style="width: 100%; font-size: 1.125rem;">
                             ${APP.opponents.length > 0 ? '✏️ Rediger motstandere' : '+ Legg til motstandere'}
@@ -199,7 +227,7 @@ export function renderSetupPage() {
 }
 
 export function renderPlayersManagementPopup() {
-    return `
+  return `
         <div id="playersManagementPopup" class="modal hidden">
             <div class="modal-content"></div>
         </div>
@@ -207,7 +235,7 @@ export function renderPlayersManagementPopup() {
 }
 
 export function renderImportTeamMenu() {
-    return `
+  return `
         <div id="importTeamMenu" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
@@ -224,7 +252,9 @@ export function renderImportTeamMenu() {
                 </p>
 
                 <div style="display: grid; gap: 1rem;">
-                    ${APP.savedTeams.map(team => `
+                    ${APP.savedTeams
+                      .map(
+                        (team) => `
                         <div style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 1.5rem; background: white;">
                             <div style="margin-bottom: 1rem;">
                                 <h3 style="font-size: 1.25rem; font-weight: 700; color: #312e81; margin-bottom: 0.5rem;">
@@ -232,32 +262,47 @@ export function renderImportTeamMenu() {
                                 </h3>
                                 <p style="color: #6b7280; font-size: 0.875rem;">
                                     ${team.players.length} spillere
-                                    ${team.players.filter(p => p.isKeeper).length > 0 ? `• ${team.players.filter(p => p.isKeeper).length} keeper(e)` : ''}
+                                    ${team.players.filter((p) => p.isKeeper).length > 0 ? `• ${team.players.filter((p) => p.isKeeper).length} keeper(e)` : ''}
                                 </p>
                             </div>
 
-                            ${team.players.length > 0 ? `
+                            ${
+                              team.players.length > 0
+                                ? `
                                 <div style="padding: 0.75rem; background: #f3f4f6; border-radius: 0.5rem; margin-bottom: 1rem; max-height: 120px; overflow-y: auto;">
                                     <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                        ${team.players.slice(0, 10).map(player => `
+                                        ${team.players
+                                          .slice(0, 10)
+                                          .map(
+                                            (player) => `
                                             <span style="padding: 0.25rem 0.75rem; background: white; border-radius: 0.5rem; border: 1px solid #d1d5db; font-size: 0.875rem; font-weight: 600;">
                                                 #${player.number} ${player.name}${player.isKeeper ? ' 🧤' : ''}
                                             </span>
-                                        `).join('')}
-                                        ${team.players.length > 10 ? `
+                                        `
+                                          )
+                                          .join('')}
+                                        ${
+                                          team.players.length > 10
+                                            ? `
                                             <span style="padding: 0.25rem 0.75rem; color: #6b7280; font-size: 0.875rem;">
                                                 +${team.players.length - 10} flere
                                             </span>
-                                        ` : ''}
+                                        `
+                                            : ''
+                                        }
                                     </div>
                                 </div>
-                            ` : ''}
+                            `
+                                : ''
+                            }
 
                             <button class="btn btn-primary" data-action="selectTeamForImport" data-team-id="${team.id}" style="width: 100%;">
                                 → Velg dette laget
                             </button>
                         </div>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
             </div>
         </div>

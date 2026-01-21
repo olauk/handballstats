@@ -10,55 +10,55 @@ import { renderTeamRosterPage } from './team-roster.js';
 import { renderHelpPage } from './help.js';
 
 export function render(attachEventListeners, renderFunction) {
-    const app = document.getElementById('app');
-    if (!app) {
-return;
-}
+  const app = document.getElementById('app');
+  if (!app) {
+    return;
+  }
 
-    console.log('🎨 Rendering page:', APP.page); // DEBUG
+  console.log('🎨 Rendering page:', APP.page); // DEBUG
 
-    // Authentication pages (login, register, reset-password)
-    if (APP.page === 'login' || APP.page === 'register' || APP.page === 'reset-password') {
-        console.log('→ Showing auth page for:', APP.page); // DEBUG
-        app.innerHTML = renderLoginPage();
-    } else if (APP.page === 'home') {
-        app.innerHTML = renderHomePage();
-    } else if (APP.page === 'welcome') {
-        app.innerHTML = renderWelcomePage();
-    } else if (APP.page === 'setup') {
-        app.innerHTML = renderSetupPage();
-    } else if (APP.page === 'history') {
-        app.innerHTML = renderHistoryPage();
-    } else if (APP.page === 'help') {
-        app.innerHTML = renderHelpPage();
-    } else if (APP.page === 'viewMatch') {
-        app.innerHTML = renderViewMatchPage();
-    } else if (APP.page === 'match') {
-        console.log('→ Showing active match page'); // DEBUG
-        app.innerHTML = renderMatchPage();
-    } else if (APP.page === 'teamRoster') {
-        app.innerHTML = renderTeamRosterPage();
-    } else {
-        console.warn('⚠️ Unknown page:', APP.page, '- defaulting to home page'); // DEBUG
-        app.innerHTML = renderHomePage();
-    }
+  // Authentication pages (login, register, reset-password)
+  if (APP.page === 'login' || APP.page === 'register' || APP.page === 'reset-password') {
+    console.log('→ Showing auth page for:', APP.page); // DEBUG
+    app.innerHTML = renderLoginPage();
+  } else if (APP.page === 'home') {
+    app.innerHTML = renderHomePage();
+  } else if (APP.page === 'welcome') {
+    app.innerHTML = renderWelcomePage();
+  } else if (APP.page === 'setup') {
+    app.innerHTML = renderSetupPage();
+  } else if (APP.page === 'history') {
+    app.innerHTML = renderHistoryPage();
+  } else if (APP.page === 'help') {
+    app.innerHTML = renderHelpPage();
+  } else if (APP.page === 'viewMatch') {
+    app.innerHTML = renderViewMatchPage();
+  } else if (APP.page === 'match') {
+    console.log('→ Showing active match page'); // DEBUG
+    app.innerHTML = renderMatchPage();
+  } else if (APP.page === 'teamRoster') {
+    app.innerHTML = renderTeamRosterPage();
+  } else {
+    console.warn('⚠️ Unknown page:', APP.page, '- defaulting to home page'); // DEBUG
+    app.innerHTML = renderHomePage();
+  }
 
-    attachEventListeners(renderFunction);
+  attachEventListeners(renderFunction);
 }
 
 export function renderLoginPage() {
-    const showRegister = APP.page === 'register';
-    const showReset = APP.page === 'reset-password';
+  const showRegister = APP.page === 'register';
+  const showReset = APP.page === 'reset-password';
 
-    if (showRegister) {
-        return renderRegisterPage();
-    }
+  if (showRegister) {
+    return renderRegisterPage();
+  }
 
-    if (showReset) {
-        return renderPasswordResetPage();
-    }
+  if (showReset) {
+    return renderPasswordResetPage();
+  }
 
-    return `
+  return `
         <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
             <div class="card" style="max-width: 28rem; width: 100%;">
                 <div style="text-align: center; margin-bottom: 2rem;">
@@ -123,7 +123,7 @@ export function renderLoginPage() {
 }
 
 function renderRegisterPage() {
-    return `
+  return `
         <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
             <div class="card" style="max-width: 28rem; width: 100%;">
                 <div style="text-align: center; margin-bottom: 2rem;">
@@ -225,7 +225,7 @@ function renderRegisterPage() {
 }
 
 function renderPasswordResetPage() {
-    return `
+  return `
         <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
             <div class="card" style="max-width: 28rem; width: 100%;">
                 <div style="text-align: center; margin-bottom: 2rem;">
@@ -271,9 +271,9 @@ function renderPasswordResetPage() {
 }
 
 export function renderWelcomePage() {
-    const hasCompletedMatches = APP.completedMatches && APP.completedMatches.length > 0;
+  const hasCompletedMatches = APP.completedMatches && APP.completedMatches.length > 0;
 
-    return `
+  return `
         <div class="container" style="max-width: 56rem; margin-top: 2rem;">
             <div class="card">
                 <div style="text-align: center; margin-bottom: 2rem;">
@@ -335,17 +335,21 @@ export function renderWelcomePage() {
                             style="flex: 1; min-width: 250px; padding: 1.5rem; font-size: 1.25rem; font-weight: 700;">
                         ⚽ Start ny kamp
                     </button>
-                    ${hasCompletedMatches ? `
+                    ${
+                      hasCompletedMatches
+                        ? `
                         <button class="btn btn-blue" data-action="viewHistory"
                                 style="flex: 1; min-width: 250px; padding: 1.5rem; font-size: 1.25rem; font-weight: 700;">
                             📋 Se tidligere kamper (${APP.completedMatches.length})
                         </button>
-                    ` : `
+                    `
+                        : `
                         <button class="btn btn-secondary" data-action="viewHistory"
                                 style="flex: 1; min-width: 250px; padding: 1.5rem; font-size: 1.25rem; font-weight: 700;">
                             📋 Tidligere kamper
                         </button>
-                    `}
+                    `
+                    }
                 </div>
 
                 <div style="margin-top: 2rem; text-align: center;">

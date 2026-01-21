@@ -4,7 +4,7 @@
 import { APP } from '../state.js';
 
 export function renderHomePage() {
-    return `
+  return `
         <div class="container">
             <div class="card" style="max-width: 800px; margin: 2rem auto;">
                 <div style="text-align: center; margin-bottom: 3rem;">
@@ -71,13 +71,17 @@ export function renderHomePage() {
                             style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 700;">
                         ▶ Start ny kamp
                     </button>
-                    ${APP.players.length > 0 || APP.opponents.length > 0 || APP.events.length > 0 ? `
+                    ${
+                      APP.players.length > 0 || APP.opponents.length > 0 || APP.events.length > 0
+                        ? `
                         <button class="btn btn-primary btn-lg"
                                 data-action="continueMatchSetup"
                                 style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 700;">
                             📝 Fortsett kamp
                         </button>
-                    ` : ''}
+                    `
+                        : ''
+                    }
                     <button class="btn btn-blue btn-lg"
                             data-action="manageTeamRosters"
                             style="padding: 0.5rem 1rem; font-size: 1.125rem;">

@@ -4,7 +4,7 @@
 import { APP } from '../state.js';
 
 export function renderHelpPage() {
-    return `
+  return `
         <div class="container">
             <div class="card" style="max-width: 900px; margin: 2rem auto;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">

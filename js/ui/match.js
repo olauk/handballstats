@@ -7,16 +7,20 @@ import { renderTimerControls } from '../timer.js';
 import { renderEventFeed } from './event-feed.js';
 
 export function renderMatchPage() {
-    const keeperOptions = APP.players.filter(p => p.isKeeper).map(k =>
+  const keeperOptions = APP.players
+    .filter((p) => p.isKeeper)
+    .map(
+      (k) =>
         `<option value="${k.id}" ${APP.activeKeeper?.id === k.id ? 'selected' : ''}>
             #${k.number} - ${k.name}
         </option>`
-    ).join('');
+    )
+    .join('');
 
-    const homeGoals = getTeamGoals('home');
-    const awayGoals = getTeamGoals('away');
+  const homeGoals = getTeamGoals('home');
+  const awayGoals = getTeamGoals('away');
 
-    return `
+  return `
         <div class="container">
             <!-- Action buttons at the top -->
             <div class="card">
@@ -41,12 +45,15 @@ export function renderMatchPage() {
                 </div>
             </div>
 
-            ${APP.matchMode === 'advanced' ? `
+            ${
+              APP.matchMode === 'advanced'
+                ? `
                 <!-- Advanced mode: Timer with team/score -->
                 <div class="card">
                     ${renderTimerControls()}
                 </div>
-            ` : `
+            `
+                : `
                 <!-- Simple mode: Traditional layout with team/score and half buttons -->
                 <div class="card">
                     <div class="flex flex-between flex-wrap mb-4" style="gap: 1rem; align-items: center;">
@@ -66,7 +73,8 @@ export function renderMatchPage() {
                         </button>
                     </div>
                 </div>
-            `}
+            `
+            }
 
             <div class="card">
                 <div class="flex flex-gap" style="align-items: center;">
@@ -79,19 +87,27 @@ export function renderMatchPage() {
                         Forsvar (Keeper mot ${APP.awayTeam})
                     </button>
 
-                    ${APP.mode === 'defense' ? `
+                    ${
+                      APP.mode === 'defense'
+                        ? `
                         <select id="keeperSelect" style="flex: 1;">
                             <option value="">Ingen keeper valgt</option>
                             ${keeperOptions}
                         </select>
-                    ` : ''}
+                    `
+                        : ''
+                    }
 
-                    ${APP.mode === 'attack' ? `
+                    ${
+                      APP.mode === 'attack'
+                        ? `
                         <button class="btn btn-warning" data-action="showTechnicalPopup"
                                 style="flex: 1; padding: 0.5rem 1rem;">
                             Registrer teknisk feil
                         </button>
-                    ` : ''}
+                    `
+                        : ''
+                    }
                 </div>
             </div>
 
@@ -107,68 +123,76 @@ export function renderMatchPage() {
 }
 
 export function renderGoalVisualization() {
-    const shots = APP.events.filter(e =>
-        e.mode === APP.mode && (e.player || e.opponent) && e.zone === 'goal'
-    ).map(event => {
-        const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
-        const className = event.result === 'mål' ? 'goal' : 'save';
+  const shots = APP.events
+    .filter((e) => e.mode === APP.mode && (e.player || e.opponent) && e.zone === 'goal')
+    .map((event) => {
+      const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
+      const className = event.result === 'mål' ? 'goal' : 'save';
 
-        // Include timer timestamp if available (advanced mode)
-        let title = event.result;
-        if (event.timerTimestamp) {
-            const min = String(event.timerTimestamp.minutes).padStart(2, '0');
-            const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
-            title = `[${min}:${sec}] ${title}`;
-        }
-        title += ` - ${event.timestamp}`;
+      // Include timer timestamp if available (advanced mode)
+      let title = event.result;
+      if (event.timerTimestamp) {
+        const min = String(event.timerTimestamp.minutes).padStart(2, '0');
+        const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
+        title = `[${min}:${sec}] ${title}`;
+      }
+      title += ` - ${event.timestamp}`;
 
-        return `
+      return `
             <div class="shot-marker ${className}"
                  style="left: ${event.x}%; top: ${event.y}%;"
                  title="${title}">
                 ${playerNumber}
             </div>
         `;
-    }).join('');
+    })
+    .join('');
 
-    const outsideShots = APP.events.filter(e =>
-        e.mode === APP.mode && (e.player || e.opponent) && e.zone === 'outside'
-    ).map(event => {
-        const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
+  const outsideShots = APP.events
+    .filter((e) => e.mode === APP.mode && (e.player || e.opponent) && e.zone === 'outside')
+    .map((event) => {
+      const playerNumber = APP.mode === 'attack' ? event.player?.number : event.opponent?.number;
 
-        // Include timer timestamp if available (advanced mode)
-        let title = event.result + ' utenfor';
-        if (event.timerTimestamp) {
-            const min = String(event.timerTimestamp.minutes).padStart(2, '0');
-            const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
-            title = `[${min}:${sec}] ${title}`;
-        }
-        title += ` - ${event.timestamp}`;
+      // Include timer timestamp if available (advanced mode)
+      let title = event.result + ' utenfor';
+      if (event.timerTimestamp) {
+        const min = String(event.timerTimestamp.minutes).padStart(2, '0');
+        const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
+        title = `[${min}:${sec}] ${title}`;
+      }
+      title += ` - ${event.timestamp}`;
 
-        return `
+      return `
             <div class="shot-marker outside"
                  style="left: ${event.x}%; top: ${event.y}%; position: absolute;"
                  title="${title}">
                 ${playerNumber}
             </div>
         `;
-    }).join('');
+    })
+    .join('');
 
-    const tempShotMarker = APP.tempShot && APP.tempShot.zone === 'goal' ? `
+  const tempShotMarker =
+    APP.tempShot && APP.tempShot.zone === 'goal'
+      ? `
         <div class="shot-marker temp"
              style="left: ${APP.tempShot.x}%; top: ${APP.tempShot.y}%;">
             ⚽
         </div>
-    ` : '';
+    `
+      : '';
 
-    const tempOutsideMarker = APP.tempShot && APP.tempShot.zone === 'outside' ? `
+  const tempOutsideMarker =
+    APP.tempShot && APP.tempShot.zone === 'outside'
+      ? `
         <div class="shot-marker temp"
              style="left: ${APP.tempShot.x}%; top: ${APP.tempShot.y}%; position: absolute;">
             ⚽
         </div>
-    ` : '';
+    `
+      : '';
 
-    return `
+  return `
         <div class="card">
             <h2 style="font-size: 1.25rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
                 ${APP.mode === 'attack' ? 'Registrer skudd' : 'Registrer motstanderskudd'}
@@ -206,13 +230,13 @@ export function renderGoalVisualization() {
 }
 
 export function renderStatistics() {
-    // Use helper functions to get correct data for both live and archived matches
-    const players = getCurrentPlayers();
-    const opponents = getCurrentOpponents();
-    const events = getCurrentEvents();
+  // Use helper functions to get correct data for both live and archived matches
+  const players = getCurrentPlayers();
+  const opponents = getCurrentOpponents();
+  const events = getCurrentEvents();
 
-    if (APP.mode === 'attack') {
-        return `
+  if (APP.mode === 'attack') {
+    return `
             <div class="card">
                 <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
                     Statistikk
@@ -242,7 +266,10 @@ export function renderStatistics() {
                                 <th class="text-center" style="font-weight: 700;">Tot. Mål</th>
                                 <th class="text-center" style="font-weight: 700;">Tot. Skudd</th>
                                 <th class="text-center" style="font-weight: 700;">Uttelling %</th>
-                                ${APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed' ? `
+                                ${
+                                  APP.matchMode === 'advanced' &&
+                                  APP.shotRegistrationMode === 'detailed'
+                                    ? `
                                     <th class="text-center" style="background: #eff6ff; font-size: 0.875rem;">Etablert</th>
                                     <th class="text-center" style="background: #eff6ff; font-size: 0.875rem;">Kontring</th>
                                     <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">9m</th>
@@ -250,31 +277,56 @@ export function renderStatistics() {
                                     <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">7m</th>
                                     <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">KA</th>
                                     <th class="text-center" style="background: #d1fae5; font-size: 0.875rem;">Assists</th>
-                                ` : ''}
+                                `
+                                    : ''
+                                }
                                 <th class="text-center">Detaljer</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${players.map(player => {
+                            ${players
+                              .map((player) => {
                                 const half1 = getPlayerStats(player.id, 1);
                                 const half2 = getPlayerStats(player.id, 2);
                                 const total = getPlayerStats(player.id);
                                 const totalShots = total.goals + total.saved + total.outside;
-                                const shootingPercent = totalShots > 0 ? ((total.goals / totalShots) * 100).toFixed(1) : 0;
+                                const shootingPercent =
+                                  totalShots > 0
+                                    ? ((total.goals / totalShots) * 100).toFixed(1)
+                                    : 0;
 
                                 // Advanced statistics (only in detailed mode)
                                 let advancedStats = '';
-                                if (APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed') {
-                                    const playerEvents = events.filter(e => e.mode === 'attack' && e.player?.id === player.id);
-                                    const etablert = playerEvents.filter(e => e.attackType === 'etablert').length;
-                                    const kontring = playerEvents.filter(e => e.attackType === 'kontring').length;
-                                    const pos9m = playerEvents.filter(e => e.shotPosition === '9m').length;
-                                    const pos6m = playerEvents.filter(e => e.shotPosition === '6m').length;
-                                    const pos7m = playerEvents.filter(e => e.shotPosition === '7m').length;
-                                    const posKa = playerEvents.filter(e => e.shotPosition === 'ka').length;
-                                    const assists = events.filter(e => e.mode === 'attack' && e.assist?.id === player.id).length;
+                                if (
+                                  APP.matchMode === 'advanced' &&
+                                  APP.shotRegistrationMode === 'detailed'
+                                ) {
+                                  const playerEvents = events.filter(
+                                    (e) => e.mode === 'attack' && e.player?.id === player.id
+                                  );
+                                  const etablert = playerEvents.filter(
+                                    (e) => e.attackType === 'etablert'
+                                  ).length;
+                                  const kontring = playerEvents.filter(
+                                    (e) => e.attackType === 'kontring'
+                                  ).length;
+                                  const pos9m = playerEvents.filter(
+                                    (e) => e.shotPosition === '9m'
+                                  ).length;
+                                  const pos6m = playerEvents.filter(
+                                    (e) => e.shotPosition === '6m'
+                                  ).length;
+                                  const pos7m = playerEvents.filter(
+                                    (e) => e.shotPosition === '7m'
+                                  ).length;
+                                  const posKa = playerEvents.filter(
+                                    (e) => e.shotPosition === 'ka'
+                                  ).length;
+                                  const assists = events.filter(
+                                    (e) => e.mode === 'attack' && e.assist?.id === player.id
+                                  ).length;
 
-                                    advancedStats = `
+                                  advancedStats = `
                                         <td class="text-center" style="background: #eff6ff; font-size: 0.875rem;">${etablert}</td>
                                         <td class="text-center" style="background: #eff6ff; font-size: 0.875rem;">${kontring}</td>
                                         <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${pos9m}</td>
@@ -310,23 +362,26 @@ export function renderStatistics() {
                                         </td>
                                     </tr>
                                 `;
-                            }).join('')}
+                              })
+                              .join('')}
                         </tbody>
                     </table>
                 </div>
             </div>
         `;
-    } else {
-        // Defense mode statistics
-        const keeperStats = players.filter(p => p.isKeeper).map(keeper => {
-            const keeperShots = events.filter(e =>
-                e.mode === 'defense' && e.keeper?.id === keeper.id
-            );
-            const totalShots = keeperShots.length;
-            const saves = keeperShots.filter(e => e.result === 'redning').length;
-            const savePercent = totalShots > 0 ? ((saves / totalShots) * 100).toFixed(1) : 0;
+  } else {
+    // Defense mode statistics
+    const keeperStats = players
+      .filter((p) => p.isKeeper)
+      .map((keeper) => {
+        const keeperShots = events.filter(
+          (e) => e.mode === 'defense' && e.keeper?.id === keeper.id
+        );
+        const totalShots = keeperShots.length;
+        const saves = keeperShots.filter((e) => e.result === 'redning').length;
+        const savePercent = totalShots > 0 ? ((saves / totalShots) * 100).toFixed(1) : 0;
 
-            return `
+        return `
                 <tr>
                     <td>${keeper.number}</td>
                     <td style="font-weight: 600;">${keeper.name}</td>
@@ -342,25 +397,29 @@ export function renderStatistics() {
                     </td>
                 </tr>
             `;
-        }).join('');
+      })
+      .join('');
 
-        const opponentStats = opponents.map(opponent => {
-            const total = getOpponentStats(opponent.id);
-            const totalShots = total.shots.length;
-            const shootingPercent = totalShots > 0 ? ((total.goals / totalShots) * 100).toFixed(1) : 0;
+    const opponentStats = opponents
+      .map((opponent) => {
+        const total = getOpponentStats(opponent.id);
+        const totalShots = total.shots.length;
+        const shootingPercent = totalShots > 0 ? ((total.goals / totalShots) * 100).toFixed(1) : 0;
 
-            // Advanced statistics (only in detailed mode)
-            let advancedStats = '';
-            if (APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed') {
-                const opponentEvents = events.filter(e => e.mode === 'defense' && e.opponent?.id === opponent.id);
-                const etablert = opponentEvents.filter(e => e.attackType === 'etablert').length;
-                const kontring = opponentEvents.filter(e => e.attackType === 'kontring').length;
-                const pos9m = opponentEvents.filter(e => e.shotPosition === '9m').length;
-                const pos6m = opponentEvents.filter(e => e.shotPosition === '6m').length;
-                const pos7m = opponentEvents.filter(e => e.shotPosition === '7m').length;
-                const posKa = opponentEvents.filter(e => e.shotPosition === 'ka').length;
+        // Advanced statistics (only in detailed mode)
+        let advancedStats = '';
+        if (APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed') {
+          const opponentEvents = events.filter(
+            (e) => e.mode === 'defense' && e.opponent?.id === opponent.id
+          );
+          const etablert = opponentEvents.filter((e) => e.attackType === 'etablert').length;
+          const kontring = opponentEvents.filter((e) => e.attackType === 'kontring').length;
+          const pos9m = opponentEvents.filter((e) => e.shotPosition === '9m').length;
+          const pos6m = opponentEvents.filter((e) => e.shotPosition === '6m').length;
+          const pos7m = opponentEvents.filter((e) => e.shotPosition === '7m').length;
+          const posKa = opponentEvents.filter((e) => e.shotPosition === 'ka').length;
 
-                advancedStats = `
+          advancedStats = `
                     <td class="text-center" style="background: #eff6ff; font-size: 0.875rem;">${etablert}</td>
                     <td class="text-center" style="background: #eff6ff; font-size: 0.875rem;">${kontring}</td>
                     <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${pos9m}</td>
@@ -368,16 +427,19 @@ export function renderStatistics() {
                     <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${pos7m}</td>
                     <td class="text-center" style="background: #fef3c7; font-size: 0.875rem;">${posKa}</td>
                 `;
-            }
+        }
 
-            return {
-                opponent,
-                totalShots,
-                goals: total.goals,
-                shootingPercent: parseFloat(shootingPercent),
-                advancedStats
-            };
-        }).sort((a, b) => b.goals - a.goals).map(({ opponent, totalShots, goals, shootingPercent, advancedStats }) => `
+        return {
+          opponent,
+          totalShots,
+          goals: total.goals,
+          shootingPercent: parseFloat(shootingPercent),
+          advancedStats,
+        };
+      })
+      .sort((a, b) => b.goals - a.goals)
+      .map(
+        ({ opponent, totalShots, goals, shootingPercent, advancedStats }) => `
             <tr>
                 <td>${opponent.number}</td>
                 <td style="font-weight: 600;">${opponent.name}</td>
@@ -393,9 +455,11 @@ export function renderStatistics() {
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `
+      )
+      .join('');
 
-        return `
+    return `
             <div class="card">
                 <h2 style="font-size: 1.5rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
                     Statistikk
@@ -445,14 +509,19 @@ export function renderStatistics() {
                                     <th class="text-center">Avfyrte skudd</th>
                                     <th class="text-center">Mål</th>
                                     <th class="text-center" style="font-weight: 700;">Uttelling %</th>
-                                    ${APP.matchMode === 'advanced' && APP.shotRegistrationMode === 'detailed' ? `
+                                    ${
+                                      APP.matchMode === 'advanced' &&
+                                      APP.shotRegistrationMode === 'detailed'
+                                        ? `
                                         <th class="text-center" style="background: #eff6ff; font-size: 0.875rem;">Etablert</th>
                                         <th class="text-center" style="background: #eff6ff; font-size: 0.875rem;">Kontring</th>
                                         <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">9m</th>
                                         <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">6m</th>
                                         <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">7m</th>
                                         <th class="text-center" style="background: #fef3c7; font-size: 0.875rem;">KA</th>
-                                    ` : ''}
+                                    `
+                                        : ''
+                                    }
                                     <th class="text-center">Detaljer</th>
                                 </tr>
                             </thead>
@@ -464,12 +533,12 @@ export function renderStatistics() {
                 </div>
             </div>
         `;
-    }
+  }
 }
 
 // Popup rendering functions
 export function renderTechnicalPopup() {
-    return `
+  return `
         <div id="technicalPopup" class="modal hidden">
             <div class="modal-content"></div>
         </div>
@@ -477,7 +546,7 @@ export function renderTechnicalPopup() {
 }
 
 export function renderShotPopup() {
-    return `
+  return `
         <div id="shotPopup" class="modal hidden">
             <div class="modal-content"></div>
         </div>
@@ -485,7 +554,7 @@ export function renderShotPopup() {
 }
 
 export function renderShotDetailsPopup() {
-    return `
+  return `
         <div id="shotDetailsPopup" class="modal hidden">
             <div class="modal-content"></div>
         </div>

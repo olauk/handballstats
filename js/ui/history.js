@@ -5,11 +5,11 @@ import { APP } from '../state.js';
 import { renderStatistics } from './match.js';
 
 export function renderHistoryPage() {
-    const sortedMatches = [...APP.completedMatches].sort((a, b) =>
-        new Date(b.matchDate) - new Date(a.matchDate)
-    );
+  const sortedMatches = [...APP.completedMatches].sort(
+    (a, b) => new Date(b.matchDate) - new Date(a.matchDate)
+  );
 
-    return `
+  return `
         <div class="container">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
@@ -30,7 +30,9 @@ export function renderHistoryPage() {
                     </div>
                 </div>
 
-                ${sortedMatches.length === 0 ? `
+                ${
+                  sortedMatches.length === 0
+                    ? `
                     <div style="text-align: center; padding: 4rem 2rem;">
                         <h2 style="font-size: 1.5rem; color: #6b7280; margin-bottom: 1rem;">
                             Ingen kamper registrert ennå
@@ -42,7 +44,8 @@ export function renderHistoryPage() {
                             Start ny kamp
                         </button>
                     </div>
-                ` : `
+                `
+                    : `
                     <div style="overflow-x: auto;">
                         <table>
                             <thead>
@@ -56,12 +59,13 @@ export function renderHistoryPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${sortedMatches.map(match => {
-                                    const totalShots = match.events.filter(e =>
-                                        e.mode === 'attack' && e.player
+                                ${sortedMatches
+                                  .map((match) => {
+                                    const totalShots = match.events.filter(
+                                      (e) => e.mode === 'attack' && e.player
                                     ).length;
-                                    const totalGoals = match.events.filter(e =>
-                                        e.mode === 'attack' && e.result === 'mål'
+                                    const totalGoals = match.events.filter(
+                                      (e) => e.mode === 'attack' && e.result === 'mål'
                                     ).length;
 
                                     return `
@@ -85,49 +89,51 @@ export function renderHistoryPage() {
                                             </td>
                                         </tr>
                                     `;
-                                }).join('')}
+                                  })
+                                  .join('')}
                             </tbody>
                         </table>
                     </div>
-                `}
+                `
+                }
             </div>
         </div>
     `;
 }
 
 export function renderViewMatchPage() {
-    if (!APP.viewingMatch) {
-        return renderHistoryPage();
-    }
+  if (!APP.viewingMatch) {
+    return renderHistoryPage();
+  }
 
-    const match = APP.viewingMatch;
+  const match = APP.viewingMatch;
 
-    // Calculate goals from match events
-    const homeGoals = match.events.filter(e => e.mode === 'attack' && e.result === 'mål').length;
-    const awayGoals = match.events.filter(e => e.mode === 'defense' && e.result === 'mål').length;
+  // Calculate goals from match events
+  const homeGoals = match.events.filter((e) => e.mode === 'attack' && e.result === 'mål').length;
+  const awayGoals = match.events.filter((e) => e.mode === 'defense' && e.result === 'mål').length;
 
-    // Temporarily set APP data to match data for rendering
-    const originalData = {
-        homeTeam: APP.homeTeam,
-        awayTeam: APP.awayTeam,
-        players: APP.players,
-        opponents: APP.opponents,
-        events: APP.events,
-        mode: APP.mode
-    };
+  // Temporarily set APP data to match data for rendering
+  const originalData = {
+    homeTeam: APP.homeTeam,
+    awayTeam: APP.awayTeam,
+    players: APP.players,
+    opponents: APP.opponents,
+    events: APP.events,
+    mode: APP.mode,
+  };
 
-    APP.homeTeam = match.homeTeam;
-    APP.awayTeam = match.awayTeam;
-    APP.players = match.players;
-    APP.opponents = match.opponents;
-    APP.events = match.events;
+  APP.homeTeam = match.homeTeam;
+  APP.awayTeam = match.awayTeam;
+  APP.players = match.players;
+  APP.opponents = match.opponents;
+  APP.events = match.events;
 
-    const statsContent = renderStatistics();
+  const statsContent = renderStatistics();
 
-    // Restore original data
-    Object.assign(APP, originalData);
+  // Restore original data
+  Object.assign(APP, originalData);
 
-    return `
+  return `
         <div class="container">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
