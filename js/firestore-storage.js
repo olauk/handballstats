@@ -3,384 +3,399 @@
 // ============================================
 import { APP, PERFORMANCE } from './state.js';
 import { auth, db } from './firebase-config.js';
+import { logAppEvent } from './debug-logger.js';
 
 // ============================================
 // SAVE ACTIVE MATCH TO FIRESTORE
 // ============================================
 export async function saveMatchToFirestore() {
+  // ============================================
+  // VALIDATION
+  // ============================================
+
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot save to Firestore: No user logged in');
+    return false;
+  }
+
+  // Don't save if there's no active match data
+  if (APP.players.length === 0 && APP.opponents.length === 0 && APP.events.length === 0) {
+    console.log('ℹ️ No active match data to save');
+    return true;
+  }
+
+  // ============================================
+  // PREPARE DATA
+  // ============================================
+
+  try {
+    const userId = auth.currentUser.uid;
+    const matchData = {
+      homeTeam: APP.homeTeam,
+      awayTeam: APP.awayTeam,
+      matchDate: APP.matchDate,
+      currentHalf: APP.currentHalf,
+      players: APP.players,
+      opponents: APP.opponents,
+      events: APP.events,
+      activeKeeper: APP.activeKeeper,
+      mode: APP.mode,
+      status: 'active',
+      ownerId: userId,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+
     // ============================================
-    // VALIDATION
+    // SAVE TO FIRESTORE
     // ============================================
 
-    if (!auth.currentUser) {
-        console.warn('⚠️ Cannot save to Firestore: No user logged in');
-        return false;
+    // Use a fixed document ID for the active match
+    await db
+      .collection('users')
+      .doc(userId)
+      .collection('matches')
+      .doc('active')
+      .set(matchData, { merge: true });
+
+    console.log('✅ Active match saved to Firestore');
+    return true;
+  } catch (error) {
+    // ============================================
+    // ERROR HANDLING
+    // ============================================
+
+    console.error('❌ Error saving match to Firestore:', error);
+
+    // Handle different error types
+    if (error.code === 'unavailable') {
+      // Network error - silent fail, will retry automatically
+      console.warn('⚠️ Firestore unavailable (network error) - will retry on next save');
+    } else if (error.code === 'permission-denied') {
+      // Permission error - critical
+      console.error('🔴 CRITICAL: Permission denied - check Firestore security rules');
+      // Don't show alert - this should not happen in production
+    } else {
+      // Other errors - log but don't alert (non-critical since localStorage is primary)
+      console.error('⚠️ Firestore save failed (non-critical):', error.message);
     }
 
-    // Don't save if there's no active match data
-    if (APP.players.length === 0 && APP.opponents.length === 0 && APP.events.length === 0) {
-        console.log('ℹ️ No active match data to save');
-        return true;
-    }
-
-    // ============================================
-    // PREPARE DATA
-    // ============================================
-
+    // Log error for debugging
     try {
-        const userId = auth.currentUser.uid;
-        const matchData = {
-            homeTeam: APP.homeTeam,
-            awayTeam: APP.awayTeam,
-            matchDate: APP.matchDate,
-            currentHalf: APP.currentHalf,
-            players: APP.players,
-            opponents: APP.opponents,
-            events: APP.events,
-            activeKeeper: APP.activeKeeper,
-            mode: APP.mode,
-            status: 'active',
-            ownerId: userId,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        // ============================================
-        // SAVE TO FIRESTORE
-        // ============================================
-
-        // Use a fixed document ID for the active match
-        await db.collection('users').doc(userId).collection('matches').doc('active').set(matchData, { merge: true });
-
-        console.log('✅ Active match saved to Firestore');
-        return true;
-
-    } catch (error) {
-        // ============================================
-        // ERROR HANDLING
-        // ============================================
-
-        console.error('❌ Error saving match to Firestore:', error);
-
-        // Handle different error types
-        if (error.code === 'unavailable') {
-            // Network error - silent fail, will retry automatically
-            console.warn('⚠️ Firestore unavailable (network error) - will retry on next save');
-        } else if (error.code === 'permission-denied') {
-            // Permission error - critical
-            console.error('🔴 CRITICAL: Permission denied - check Firestore security rules');
-            // Don't show alert - this should not happen in production
-        } else {
-            // Other errors - log but don't alert (non-critical since localStorage is primary)
-            console.error('⚠️ Firestore save failed (non-critical):', error.message);
-        }
-
-        // Log error for debugging
-        try {
-            await logAppEvent('error', {
-                function: 'saveMatchToFirestore',
-                error: error.message,
-                errorCode: error.code,
-                errorName: error.name
-            });
-        } catch (logError) {
-            console.error('Failed to log Firestore error:', logError);
-        }
-
-        return false;
+      await logAppEvent('error', {
+        function: 'saveMatchToFirestore',
+        error: error.message,
+        errorCode: error.code,
+        errorName: error.name,
+      });
+    } catch (logError) {
+      console.error('Failed to log Firestore error:', logError);
     }
+
+    return false;
+  }
 }
 
 // Debounced save to Firestore (similar to localStorage)
 let firestoreSaveTimeout = null;
 export function saveMatchToFirestoreDebounced() {
-    clearTimeout(firestoreSaveTimeout);
-    firestoreSaveTimeout = setTimeout(() => {
-        saveMatchToFirestore();
-    }, 1000); // 1 second debounce
+  clearTimeout(firestoreSaveTimeout);
+  firestoreSaveTimeout = setTimeout(() => {
+    saveMatchToFirestore();
+  }, 1000); // 1 second debounce
 }
 
 // ============================================
 // LOAD ACTIVE MATCH FROM FIRESTORE
 // ============================================
 export async function loadActiveMatchFromFirestore() {
-    if (!auth.currentUser) {
-        console.log('ℹ️ No user logged in, skipping Firestore load');
-        return null;
-    }
+  if (!auth.currentUser) {
+    console.log('ℹ️ No user logged in, skipping Firestore load');
+    return null;
+  }
 
-    try {
-        const userId = auth.currentUser.uid;
-        const matchDoc = await db.collection('users').doc(userId).collection('matches').doc('active').get();
+  try {
+    const userId = auth.currentUser.uid;
+    const matchDoc = await db
+      .collection('users')
+      .doc(userId)
+      .collection('matches')
+      .doc('active')
+      .get();
 
-        if (matchDoc.exists) {
-            const data = matchDoc.data();
-            console.log('✅ Active match loaded from Firestore');
-            return data;
-        } else {
-            console.log('ℹ️ No active match found in Firestore');
-            return null;
-        }
-    } catch (error) {
-        console.error('❌ Error loading match from Firestore:', error);
-        return null;
+    if (matchDoc.exists) {
+      const data = matchDoc.data();
+      console.log('✅ Active match loaded from Firestore');
+      return data;
+    } else {
+      console.log('ℹ️ No active match found in Firestore');
+      return null;
     }
+  } catch (error) {
+    console.error('❌ Error loading match from Firestore:', error);
+    return null;
+  }
 }
 
 // ============================================
 // SAVE COMPLETED MATCH TO FIRESTORE
 // ============================================
 export async function saveCompletedMatchToFirestore(matchData) {
-    if (!auth.currentUser) {
-        console.warn('⚠️ Cannot save completed match: No user logged in');
-        return false;
-    }
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot save completed match: No user logged in');
+    return false;
+  }
 
-    try {
-        const userId = auth.currentUser.uid;
+  try {
+    const userId = auth.currentUser.uid;
 
-        // Generate unique match ID if not present
-        const matchId = matchData.id || Date.now().toString();
+    // Generate unique match ID if not present
+    const matchId = matchData.id || Date.now().toString();
 
-        const firestoreMatchData = {
-            ...matchData,
-            id: matchId,
-            status: 'completed',
-            ownerId: userId,
-            completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
+    const firestoreMatchData = {
+      ...matchData,
+      id: matchId,
+      status: 'completed',
+      ownerId: userId,
+      completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
 
-        // Convert matchId to string for Firestore document ID
-        await db.collection('users').doc(userId).collection('matches').doc(matchId.toString()).set(firestoreMatchData);
+    // Convert matchId to string for Firestore document ID
+    await db
+      .collection('users')
+      .doc(userId)
+      .collection('matches')
+      .doc(matchId.toString())
+      .set(firestoreMatchData);
 
-        console.log('✅ Completed match saved to Firestore:', matchId);
-        return matchId;
-    } catch (error) {
-        console.error('❌ Error saving completed match:', error);
-        return false;
-    }
+    console.log('✅ Completed match saved to Firestore:', matchId);
+    return matchId;
+  } catch (error) {
+    console.error('❌ Error saving completed match:', error);
+    return false;
+  }
 }
 
 // ============================================
 // LOAD ALL COMPLETED MATCHES FROM FIRESTORE
 // ============================================
 export async function loadCompletedMatchesFromFirestore() {
-    if (!auth.currentUser) {
-        console.log('ℹ️ No user logged in, skipping completed matches load');
-        return [];
-    }
+  if (!auth.currentUser) {
+    console.log('ℹ️ No user logged in, skipping completed matches load');
+    return [];
+  }
 
-    try {
-        const userId = auth.currentUser.uid;
+  try {
+    const userId = auth.currentUser.uid;
 
-        // Get all matches from the user's collection
-        const matchesSnapshot = await db.collection('users').doc(userId).collection('matches').get();
+    // Get all matches from the user's collection
+    const matchesSnapshot = await db.collection('users').doc(userId).collection('matches').get();
 
-        const matches = [];
-        matchesSnapshot.forEach(doc => {
-            const data = doc.data();
-            // Filter out the 'active' document and only include completed matches
-            if (doc.id !== 'active' && data.status === 'completed') {
-                matches.push(data);
-            }
-        });
+    const matches = [];
+    matchesSnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Filter out the 'active' document and only include completed matches
+      if (doc.id !== 'active' && data.status === 'completed') {
+        matches.push(data);
+      }
+    });
 
-        // Sort by completedAt on the client side
-        matches.sort((a, b) => {
-            const aTime = a.completedAt?.toMillis?.() || 0;
-            const bTime = b.completedAt?.toMillis?.() || 0;
-            return bTime - aTime; // Descending order (newest first)
-        });
+    // Sort by completedAt on the client side
+    matches.sort((a, b) => {
+      const aTime = a.completedAt?.toMillis?.() || 0;
+      const bTime = b.completedAt?.toMillis?.() || 0;
+      return bTime - aTime; // Descending order (newest first)
+    });
 
-        console.log(`✅ Loaded ${matches.length} completed matches from Firestore`);
-        return matches;
-    } catch (error) {
-        console.error('❌ Error loading completed matches:', error);
-        return [];
-    }
+    console.log(`✅ Loaded ${matches.length} completed matches from Firestore`);
+    return matches;
+  } catch (error) {
+    console.error('❌ Error loading completed matches:', error);
+    return [];
+  }
 }
 
 // ============================================
 // DELETE COMPLETED MATCH FROM FIRESTORE
 // ============================================
 export async function deleteCompletedMatchFromFirestore(matchId) {
-    if (!auth.currentUser) {
-        console.warn('⚠️ Cannot delete match: No user logged in');
-        return false;
-    }
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot delete match: No user logged in');
+    return false;
+  }
 
-    try {
-        const userId = auth.currentUser.uid;
-        await db.collection('users').doc(userId).collection('matches').doc(matchId.toString()).delete();
+  try {
+    const userId = auth.currentUser.uid;
+    await db.collection('users').doc(userId).collection('matches').doc(matchId.toString()).delete();
 
-        console.log('✅ Match deleted from Firestore:', matchId);
-        return true;
-    } catch (error) {
-        console.error('❌ Error deleting match from Firestore:', error);
-        return false;
-    }
+    console.log('✅ Match deleted from Firestore:', matchId);
+    return true;
+  } catch (error) {
+    console.error('❌ Error deleting match from Firestore:', error);
+    return false;
+  }
 }
 
 // ============================================
 // MIGRATE LOCALSTORAGE DATA TO FIRESTORE
 // ============================================
 export async function migrateLocalStorageToFirestore() {
-    if (!auth.currentUser) {
-        console.log('ℹ️ No user logged in, skipping migration');
-        return false;
+  if (!auth.currentUser) {
+    console.log('ℹ️ No user logged in, skipping migration');
+    return false;
+  }
+
+  try {
+    console.log('🔄 Starting migration from localStorage to Firestore...');
+
+    // Check if migration has already been done
+    const userId = auth.currentUser.uid;
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.data();
+
+    if (userData?.migrated) {
+      console.log('✅ Migration already completed');
+      return true;
     }
 
-    try {
-        console.log('🔄 Starting migration from localStorage to Firestore...');
+    let migratedCount = 0;
 
-        // Check if migration has already been done
-        const userId = auth.currentUser.uid;
-        const userDoc = await db.collection('users').doc(userId).get();
-        const userData = userDoc.data();
+    // Migrate completed matches
+    if (APP.completedMatches && APP.completedMatches.length > 0) {
+      console.log(`📦 Migrating ${APP.completedMatches.length} completed matches...`);
 
-        if (userData?.migrated) {
-            console.log('✅ Migration already completed');
-            return true;
-        }
-
-        let migratedCount = 0;
-
-        // Migrate completed matches
-        if (APP.completedMatches && APP.completedMatches.length > 0) {
-            console.log(`📦 Migrating ${APP.completedMatches.length} completed matches...`);
-
-            for (const match of APP.completedMatches) {
-                await saveCompletedMatchToFirestore(match);
-                migratedCount++;
-            }
-        }
-
-        // Migrate active match if exists
-        if (APP.players.length > 0 || APP.opponents.length > 0 || APP.events.length > 0) {
-            console.log('📦 Migrating active match...');
-            await saveMatchToFirestore();
-            migratedCount++;
-        }
-
-        // Mark migration as complete
-        await db.collection('users').doc(userId).set({
-            migrated: true,
-            migratedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-
-        console.log(`✅ Migration complete! Migrated ${migratedCount} matches to Firestore`);
-        return true;
-
-    } catch (error) {
-        console.error('❌ Error during migration:', error);
-        return false;
+      for (const match of APP.completedMatches) {
+        await saveCompletedMatchToFirestore(match);
+        migratedCount++;
+      }
     }
+
+    // Migrate active match if exists
+    if (APP.players.length > 0 || APP.opponents.length > 0 || APP.events.length > 0) {
+      console.log('📦 Migrating active match...');
+      await saveMatchToFirestore();
+      migratedCount++;
+    }
+
+    // Mark migration as complete
+    await db.collection('users').doc(userId).set(
+      {
+        migrated: true,
+        migratedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    console.log(`✅ Migration complete! Migrated ${migratedCount} matches to Firestore`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error during migration:', error);
+    return false;
+  }
 }
 
 // ============================================
 // SYNC: LOAD ALL DATA FROM FIRESTORE
 // ============================================
 export async function syncFromFirestore() {
-    if (!auth.currentUser) {
-        console.log('ℹ️ No user logged in, skipping sync');
-        return false;
-    }
+  if (!auth.currentUser) {
+    console.log('ℹ️ No user logged in, skipping sync');
+    return false;
+  }
 
-    try {
-        console.log('🔄 Syncing data from Firestore...');
+  try {
+    console.log('🔄 Syncing data from Firestore...');
 
-        // Load active match
-        const activeMatch = await loadActiveMatchFromFirestore();
-        if (activeMatch) {
-            // Check if we have local data to merge
-            const hasLocalData = APP.events.length > 0 || APP.players.length > 0;
+    // Load active match
+    const activeMatch = await loadActiveMatchFromFirestore();
+    if (activeMatch) {
+      // Check if we have local data to merge
+      const hasLocalData = APP.events.length > 0 || APP.players.length > 0;
 
-            if (hasLocalData) {
-                // MERGE STRATEGY: Combine local and Firestore data intelligently
-                console.log('🔀 Merging local and Firestore data...');
+      if (hasLocalData) {
+        // MERGE STRATEGY: Combine local and Firestore data intelligently
+        console.log('🔀 Merging local and Firestore data...');
 
-                // Merge events based on ID to avoid duplicates
-                const localEvents = APP.events || [];
-                const firestoreEvents = activeMatch.events || [];
+        // Merge events based on ID to avoid duplicates
+        const localEvents = APP.events || [];
+        const firestoreEvents = activeMatch.events || [];
 
-                // Create a Map to deduplicate by event ID
-                const eventMap = new Map();
+        // Create a Map to deduplicate by event ID
+        const eventMap = new Map();
 
-                // Add local events first
-                localEvents.forEach(event => {
-                    eventMap.set(event.id, event);
-                });
+        // Add local events first
+        localEvents.forEach((event) => {
+          eventMap.set(event.id, event);
+        });
 
-                // Add Firestore events (if not already present)
-                let newEventsCount = 0;
-                firestoreEvents.forEach(event => {
-                    if (!eventMap.has(event.id)) {
-                        eventMap.set(event.id, event);
-                        newEventsCount++;
-                    }
-                });
+        // Add Firestore events (if not already present)
+        let newEventsCount = 0;
+        firestoreEvents.forEach((event) => {
+          if (!eventMap.has(event.id)) {
+            eventMap.set(event.id, event);
+            newEventsCount++;
+          }
+        });
 
-                // Convert back to array and sort by id (chronological order)
-                APP.events = Array.from(eventMap.values()).sort((a, b) => a.id - b.id);
+        // Convert back to array and sort by id (chronological order)
+        APP.events = Array.from(eventMap.values()).sort((a, b) => a.id - b.id);
 
-                if (newEventsCount > 0) {
-                    console.log(`✅ Merged ${newEventsCount} new events from Firestore`);
-                }
-
-                // Merge players/opponents (prefer Firestore if local is empty, otherwise keep local)
-                APP.players = APP.players.length > 0 ? APP.players : (activeMatch.players || []);
-                APP.opponents = APP.opponents.length > 0 ? APP.opponents : (activeMatch.opponents || []);
-
-                // For other fields, prefer local if exists, otherwise use Firestore
-                APP.homeTeam = APP.homeTeam !== 'Eget lag' ? APP.homeTeam : activeMatch.homeTeam;
-                APP.awayTeam = APP.awayTeam !== 'Motstander' ? APP.awayTeam : activeMatch.awayTeam;
-                APP.matchDate = APP.matchDate || activeMatch.matchDate;
-                APP.currentHalf = APP.currentHalf || activeMatch.currentHalf;
-                APP.activeKeeper = APP.activeKeeper || activeMatch.activeKeeper;
-                APP.mode = APP.mode || activeMatch.mode;
-
-            } else {
-                // No local data, just use Firestore data directly
-                console.log('📥 Loading data from Firestore (no local data)...');
-                APP.homeTeam = activeMatch.homeTeam || APP.homeTeam;
-                APP.awayTeam = activeMatch.awayTeam || APP.awayTeam;
-                APP.matchDate = activeMatch.matchDate || APP.matchDate;
-                APP.currentHalf = activeMatch.currentHalf || APP.currentHalf;
-                APP.players = activeMatch.players || [];
-                APP.opponents = activeMatch.opponents || [];
-                APP.events = activeMatch.events || [];
-                APP.activeKeeper = activeMatch.activeKeeper || null;
-                APP.mode = activeMatch.mode || 'attack';
-            }
-
-            // Invalidate stats cache after merge
-            PERFORMANCE.invalidateStatsCache();
+        if (newEventsCount > 0) {
+          console.log(`✅ Merged ${newEventsCount} new events from Firestore`);
         }
 
-        // Load and merge completed matches
-        const firestoreMatches = await loadCompletedMatchesFromFirestore();
-        const localMatches = APP.completedMatches || [];
+        // Merge players/opponents (prefer Firestore if local is empty, otherwise keep local)
+        APP.players = APP.players.length > 0 ? APP.players : activeMatch.players || [];
+        APP.opponents = APP.opponents.length > 0 ? APP.opponents : activeMatch.opponents || [];
 
-        // Merge completed matches by ID (avoid duplicates)
-        const matchMap = new Map();
+        // For other fields, prefer local if exists, otherwise use Firestore
+        APP.homeTeam = APP.homeTeam !== 'Eget lag' ? APP.homeTeam : activeMatch.homeTeam;
+        APP.awayTeam = APP.awayTeam !== 'Motstander' ? APP.awayTeam : activeMatch.awayTeam;
+        APP.matchDate = APP.matchDate || activeMatch.matchDate;
+        APP.currentHalf = APP.currentHalf || activeMatch.currentHalf;
+        APP.activeKeeper = APP.activeKeeper || activeMatch.activeKeeper;
+        APP.mode = APP.mode || activeMatch.mode;
+      } else {
+        // No local data, just use Firestore data directly
+        console.log('📥 Loading data from Firestore (no local data)...');
+        APP.homeTeam = activeMatch.homeTeam || APP.homeTeam;
+        APP.awayTeam = activeMatch.awayTeam || APP.awayTeam;
+        APP.matchDate = activeMatch.matchDate || APP.matchDate;
+        APP.currentHalf = activeMatch.currentHalf || APP.currentHalf;
+        APP.players = activeMatch.players || [];
+        APP.opponents = activeMatch.opponents || [];
+        APP.events = activeMatch.events || [];
+        APP.activeKeeper = activeMatch.activeKeeper || null;
+        APP.mode = activeMatch.mode || 'attack';
+      }
 
-        // Add local matches
-        localMatches.forEach(match => {
-            matchMap.set(match.id, match);
-        });
-
-        // Add Firestore matches (overwrites local if same ID - Firestore is source of truth)
-        firestoreMatches.forEach(match => {
-            matchMap.set(match.id, match);
-        });
-
-        APP.completedMatches = Array.from(matchMap.values());
-
-        console.log('✅ Sync complete');
-        return true;
-
-    } catch (error) {
-        console.error('❌ Error syncing from Firestore:', error);
-        return false;
+      // Invalidate stats cache after merge
+      PERFORMANCE.invalidateStatsCache();
     }
+
+    // Load and merge completed matches
+    const firestoreMatches = await loadCompletedMatchesFromFirestore();
+    const localMatches = APP.completedMatches || [];
+
+    // Merge completed matches by ID (avoid duplicates)
+    const matchMap = new Map();
+
+    // Add local matches
+    localMatches.forEach((match) => {
+      matchMap.set(match.id, match);
+    });
+
+    // Add Firestore matches (overwrites local if same ID - Firestore is source of truth)
+    firestoreMatches.forEach((match) => {
+      matchMap.set(match.id, match);
+    });
+
+    APP.completedMatches = Array.from(matchMap.values());
+
+    console.log('✅ Sync complete');
+    return true;
+  } catch (error) {
+    console.error('❌ Error syncing from Firestore:', error);
+    return false;
+  }
 }

@@ -9,15 +9,15 @@ import { APP } from '../state.js';
  * @returns {string} HTML string
  */
 export function renderEventFeed() {
-    if (APP.matchMode !== 'advanced') {
-        return ''; // Don't show in simple mode
-    }
+  if (APP.matchMode !== 'advanced') {
+    return ''; // Don't show in simple mode
+  }
 
-    // Get all events sorted by time (oldest first for display)
-    const events = [...APP.events].sort((a, b) => a.id - b.id);
+  // Get all events sorted by time (oldest first for display)
+  const events = [...APP.events].sort((a, b) => a.id - b.id);
 
-    if (events.length === 0) {
-        return `
+  if (events.length === 0) {
+    return `
             <div class="card" style="margin-top: 1.5rem;">
                 <h3 style="font-size: 1.25rem; font-weight: 700; color: #312e81; margin-bottom: 1rem;">
                     📋 Hendelsesliste
@@ -30,26 +30,28 @@ export function renderEventFeed() {
                 </div>
             </div>
         `;
-    }
+  }
 
-    // Calculate running score for each event
-    let homeScore = 0;
-    let awayScore = 0;
+  // Calculate running score for each event
+  let homeScore = 0;
+  let awayScore = 0;
 
-    const eventItems = events.map(event => {
-        // Update score if it's a goal
-        if (event.result === 'mål') {
-            if (event.mode === 'attack') {
-                homeScore++;
-            } else if (event.mode === 'defense') {
-                awayScore++;
-            }
+  const eventItems = events
+    .map((event) => {
+      // Update score if it's a goal
+      if (event.result === 'mål') {
+        if (event.mode === 'attack') {
+          homeScore++;
+        } else if (event.mode === 'defense') {
+          awayScore++;
         }
+      }
 
-        return formatEventItem(event, homeScore, awayScore);
-    }).join('');
+      return formatEventItem(event, homeScore, awayScore);
+    })
+    .join('');
 
-    return `
+  return `
         <div class="card" style="margin-top: 1.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h3 style="font-size: 1.25rem; font-weight: 700; color: #312e81; margin: 0;">
@@ -75,60 +77,60 @@ export function renderEventFeed() {
  * @returns {string} HTML string
  */
 function formatEventItem(event, homeScore, awayScore) {
-    // Get timer timestamp if available
-    let timeString = '';
-    if (event.timerTimestamp) {
-        const min = String(event.timerTimestamp.minutes).padStart(2, '0');
-        const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
-        timeString = `[${min}:${sec}]`;
-    }
+  // Get timer timestamp if available
+  let timeString = '';
+  if (event.timerTimestamp) {
+    const min = String(event.timerTimestamp.minutes).padStart(2, '0');
+    const sec = String(event.timerTimestamp.seconds).padStart(2, '0');
+    timeString = `[${min}:${sec}]`;
+  }
 
-    // Get player info
-    let playerInfo = '';
-    let eventIcon = '';
-    let eventColor = '#6b7280';
+  // Get player info
+  let playerInfo = '';
+  let eventIcon = '';
+  let eventColor = '#6b7280';
 
-    if (event.mode === 'attack' && event.player) {
-        playerInfo = `#${event.player.number} ${event.player.name}`;
-    } else if (event.mode === 'defense' && event.opponent) {
-        playerInfo = `#${event.opponent.number} ${event.opponent.name}`;
-    } else if (event.mode === 'technical' && event.player) {
-        playerInfo = `#${event.player.number} ${event.player.name}`;
-    }
+  if (event.mode === 'attack' && event.player) {
+    playerInfo = `#${event.player.number} ${event.player.name}`;
+  } else if (event.mode === 'defense' && event.opponent) {
+    playerInfo = `#${event.opponent.number} ${event.opponent.name}`;
+  } else if (event.mode === 'technical' && event.player) {
+    playerInfo = `#${event.player.number} ${event.player.name}`;
+  }
 
-    // Set icon and color based on result
-    switch (event.result) {
-        case 'mål':
-            eventIcon = '⚽';
-            eventColor = '#059669';
-            break;
-        case 'redning':
-            eventIcon = '🧤';
-            eventColor = '#f59e0b';
-            break;
-        case 'utenfor':
-            eventIcon = '📍';
-            eventColor = '#6b7280';
-            break;
-        case 'teknisk feil':
-            eventIcon = '⚠️';
-            eventColor = '#dc2626';
-            break;
-        default:
-            eventIcon = '•';
-    }
+  // Set icon and color based on result
+  switch (event.result) {
+    case 'mål':
+      eventIcon = '⚽';
+      eventColor = '#059669';
+      break;
+    case 'redning':
+      eventIcon = '🧤';
+      eventColor = '#f59e0b';
+      break;
+    case 'utenfor':
+      eventIcon = '📍';
+      eventColor = '#6b7280';
+      break;
+    case 'teknisk feil':
+      eventIcon = '⚠️';
+      eventColor = '#dc2626';
+      break;
+    default:
+      eventIcon = '•';
+  }
 
-    // Format score display (only for goals)
-    let scoreDisplay = '';
-    if (event.result === 'mål') {
-        scoreDisplay = `<span style="font-weight: 700; color: #312e81;">(${homeScore}-${awayScore})</span>`;
-    }
+  // Format score display (only for goals)
+  let scoreDisplay = '';
+  if (event.result === 'mål') {
+    scoreDisplay = `<span style="font-weight: 700; color: #312e81;">(${homeScore}-${awayScore})</span>`;
+  }
 
-    // Determine if this is our team or opponent
-    const isHomeTeam = event.mode === 'attack' || event.mode === 'technical';
-    const teamLabel = isHomeTeam ? APP.homeTeam : APP.awayTeam;
+  // Determine if this is our team or opponent
+  const isHomeTeam = event.mode === 'attack' || event.mode === 'technical';
+  const teamLabel = isHomeTeam ? APP.homeTeam : APP.awayTeam;
 
-    return `
+  return `
         <div class="event-item" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; background: white; border-radius: 6px; border-left: 4px solid ${eventColor}; transition: all 0.2s;">
             <div style="font-size: 1.5rem; line-height: 1;">${eventIcon}</div>
             <div style="flex: 1; min-width: 0;">
@@ -151,39 +153,41 @@ function formatEventItem(event, homeScore, awayScore) {
  * Updates the event feed without re-rendering the entire page
  */
 export function updateEventFeed() {
-    if (APP.matchMode !== 'advanced') {
-        return; // Don't update in simple mode
-    }
+  if (APP.matchMode !== 'advanced') {
+    return; // Don't update in simple mode
+  }
 
-    // Find the event feed container
-    const eventFeedContainer = document.querySelector('#eventFeed');
-    if (!eventFeedContainer) {
-        return; // Event feed not in DOM yet
-    }
+  // Find the event feed container
+  const eventFeedContainer = document.querySelector('#eventFeed');
+  if (!eventFeedContainer) {
+    return; // Event feed not in DOM yet
+  }
 
-    const parentCard = eventFeedContainer.closest('.card');
-    if (!parentCard) return;
+  const parentCard = eventFeedContainer.closest('.card');
+  if (!parentCard) {
+    return;
+  }
 
-    // Re-render the entire event feed card
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = renderEventFeed();
-    const newCard = tempDiv.firstElementChild;
+  // Re-render the entire event feed card
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = renderEventFeed();
+  const newCard = tempDiv.firstElementChild;
 
-    if (newCard && parentCard.parentNode) {
-        parentCard.parentNode.replaceChild(newCard, parentCard);
-        scrollEventFeedToBottom();
-    }
+  if (newCard && parentCard.parentNode) {
+    parentCard.parentNode.replaceChild(newCard, parentCard);
+    scrollEventFeedToBottom();
+  }
 }
 
 /**
  * Scrolls the event feed to the bottom (most recent event)
  */
 export function scrollEventFeedToBottom() {
-    // Use requestAnimationFrame to ensure DOM is updated
-    requestAnimationFrame(() => {
-        const eventFeed = document.getElementById('eventFeed');
-        if (eventFeed) {
-            eventFeed.scrollTop = eventFeed.scrollHeight;
-        }
-    });
+  // Use requestAnimationFrame to ensure DOM is updated
+  requestAnimationFrame(() => {
+    const eventFeed = document.getElementById('eventFeed');
+    if (eventFeed) {
+      eventFeed.scrollTop = eventFeed.scrollHeight;
+    }
+  });
 }

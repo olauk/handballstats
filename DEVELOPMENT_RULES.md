@@ -843,6 +843,13 @@ firebase hosting:rollback <version>
 
 ### 10.2 For AI-Agenter
 
+⚠️ **VIKTIG: Git Hooks Fungerer Ikke i Claude Code**
+
+Lokale pre-commit hooks (Husky) kjører IKKE når AI-agenter committer kode.
+Dette betyr at AI-agenter må MANUELT kjøre alle valideringer før commit.
+
+---
+
 **ABSOLUTTE REGLER:**
 
 1. **LES DEVELOPMENT_RULES.md først**
@@ -857,8 +864,54 @@ firebase hosting:rollback <version>
 4. **SKRIV TESTER først for RED ZONE**
    Ikke engang foreslå endring før tester eksisterer
 
-5. **DOKUMENTER alt**
+5. **KJØ TESTER før HVER commit** (KRITISK!)
+   ```bash
+   # ALLTID kjør dette før git commit:
+   npm run test:run
+
+   # Verifiser at ALLE tester passerer
+   # Bare hvis alle er grønne: fortsett med commit
+   ```
+
+6. **DOKUMENTER alt**
    Commit messages, kommentarer, reasoning
+
+---
+
+**PRE-COMMIT CHECKLIST FOR AI-AGENTER:**
+
+**FØR HVER COMMIT - UTEN UNNTAK:**
+
+```bash
+# 1. Kjør linter
+npm run lint
+
+# 2. Kjør prettier check (hvis tilgjengelig)
+npm run format:check || true
+
+# 3. Kjør ALL tester
+npm run test:run
+
+# 4. Sjekk for console.log
+git diff --cached | grep "console.log" && echo "⚠️  Remove console.log!" || echo "✅ No console.log"
+
+# 5. For RED ZONE endringer: Ekstra validering
+# Verifiser at ALLE 18+ tester for shots.js passerer
+# Verifiser at ALLE 8+ tester for state.js passerer
+# osv...
+
+# 6. Bare hvis ALT er grønt: commit
+git commit -m "..."
+```
+
+**HVORFOR ER DETTE KRITISK?**
+
+- ❌ Git hooks kjører IKKE i Claude Code-miljøet
+- ❌ Ingen automatisk test-kjøring før commit
+- ✅ GitHub Actions vil fange feil, men DA er det for sent
+- ✅ Ved å teste først unngår vi "fix broken tests" commits
+
+---
 
 **Eksempel på GOD AI-agent behavior:**
 ```
@@ -870,14 +923,37 @@ Agent: "Jeg ser en bug i registerShot() (shots.js:180).
        2. Verifisere at test feiler
        3. Fikse buggen
        4. Verifisere at test passerer
-       5. Kjøre ALLE relaterte tester
+       5. Kjøre ALLE relaterte tester: npm run test:run
+       6. Verifisere at ingen console.log er igjen
+       7. DERETTER committe
 
        Skal jeg fortsette med denne prosessen?"
 
 User: "Ja"
 
 Agent: "Perfekt. Skriver test UT-017..."
+[... etter fixing ...]
+Agent: "Kjører npm run test:run før commit..."
+[... verifiserer at alle tester passerer ...]
+Agent: "✅ Alle tester passerer. Committer nå..."
 ```
+
+**Eksempel på DÅRLIG AI-agent behavior:**
+```
+Agent: "Fikset buggen i shots.js. Committer nå..."
+[COMMITTER UTEN Å KJØRE TESTER]
+❌ FEIL! Dette bryter DEVELOPMENT_RULES.md
+```
+
+---
+
+**ENFORCEMENT:**
+
+GitHub Actions vil validere på PR, men følg reglene FØRST:
+- ✅ Spare tid (unngå "fix tests" commits)
+- ✅ Spare CI/CD ressurser
+- ✅ Profesjonell kode-praksis
+- ✅ Respekterer team workflows
 
 ---
 
@@ -885,35 +961,86 @@ Agent: "Perfekt. Skriver test UT-017..."
 
 ### 11.1 Automated Checks
 
-**Git Hooks (husky):**
-```javascript
-// .husky/pre-commit
+**Enforcement Strategi:**
+
+Vi har TO lag med automatisk validering:
+
+1. **Git Hooks (for lokale utviklere)** - Kjører IKKE for AI-agenter
+2. **GitHub Actions (for alle)** - Kjører på hver PR/push
+
+---
+
+#### Git Hooks (Husky) - For Lokale Utviklere
+
+**Fil:** `.husky/pre-commit`
+
+⚠️ **MERK:** Dette fungerer KUN for lokale utviklere som har kjørt `npm install`.
+AI-agenter i Claude Code har IKKE tilgang til disse hooks.
+
+```bash
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+# Lint staged files
+npx lint-staged
 
-# Check commit message format
-npx commitlint --edit $1
-
-# Run linter
-npm run lint
-
-# Check for console.logs
-if git diff --cached | grep -i "console.log"; then
-    echo "❌ Remove console.log before committing"
-    exit 1
-fi
-
-# For RED ZONE files, ensure tests exist
-CHANGED_FILES=$(git diff --cached --name-only)
-if echo "$CHANGED_FILES" | grep -E "shots.js|state.js|storage.js|firestore-storage.js|statistics.js"; then
-    echo "⚠️  RED ZONE file changed. Running tests..."
-    npm run test:unit
-    if [ $? -ne 0 ]; then
-        echo "❌ Tests failed. Cannot commit RED ZONE changes without passing tests."
-        exit 1
-    fi
-fi
+# Run tests (only if test files are staged)
+npm run test:run
 ```
+
+**Aktivering (kun nødvendig lokalt):**
+```bash
+npm install
+npm run prepare  # Dette setter opp git hooks
+```
+
+---
+
+#### GitHub Actions - Primær Enforcement
+
+**Fil:** `.github/workflows/validation.yml`
+
+Denne kjører automatisk på:
+- Alle PRs til `main` branch
+- Alle pushes til `claude/**` branches
+
+**Validerer:**
+1. ✅ ESLint (kode-kvalitet)
+2. ✅ Prettier (formatering)
+3. ✅ All unit tests (npm run test:run)
+4. ✅ Ingen console.log i endrede filer
+5. ✅ Ekstra RED ZONE validering
+6. ✅ Commit message format
+
+**RED ZONE Spesialhåndtering:**
+```yaml
+# Hvis shots.js, state.js, storage.js, firestore-storage.js,
+# eller statistics.js er endret:
+# → Kjører FULL test suite
+# → Blokkerer PR hvis tester feiler
+```
+
+**Resultat:**
+- ❌ PR kan ikke merges hvis validering feiler
+- ✅ Beskytter main branch mot dårlig kode
+- ✅ Fungerer for både AI-agenter og mennesker
+
+---
+
+#### Hvorfor To Lag?
+
+**Lokale hooks (Husky):**
+- ⚡ Rask feedback (før push)
+- 🎯 Kun for lokale utviklere
+- ❌ Fungerer IKKE for AI-agenter
+
+**GitHub Actions:**
+- 🛡️ Ultimate beskyttelse
+- ✅ Fungerer for ALLE (AI + mennesker)
+- 🔒 Kan ikke omgås
+- ✅ Blokkerer PR merge
+
+**For AI-agenter:**
+Siden lokale hooks ikke fungerer, er det KRITISK å følge
+"Pre-Commit Checklist for AI-agenter" i seksjon 10.2.
 
 ### 11.2 Code Review Checklist
 
