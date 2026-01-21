@@ -99,6 +99,9 @@ export function renderHomePage() {
                         <button class="btn btn-blue" data-action="viewHelp">
                             ❓ Hjelp
                         </button>
+                        <button class="btn btn-warning" data-action="openBuyMeCoffee">
+                            ☕ Buy me a coffee
+                        </button>
                         <button class="btn btn-secondary" data-action="logout">
                             Logg ut
                         </button>
