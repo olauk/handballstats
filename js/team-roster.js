@@ -3,6 +3,7 @@
 // ============================================
 import { APP, generateUniqueId } from './state.js';
 import { saveToLocalStorage, saveToLocalStorageImmediate } from './storage.js';
+import { saveTeamRosterToFirestore, deleteTeamRosterFromFirestore } from './firestore-storage.js';
 
 /**
  * Create a new team roster
@@ -46,7 +47,16 @@ export function deleteTeamRoster(teamId) {
     )
   ) {
     APP.savedTeams = APP.savedTeams.filter((t) => t.id !== teamId);
+
+    // Save to localStorage immediately
     saveToLocalStorageImmediate();
+
+    // Delete from Firestore (non-blocking, background operation)
+    deleteTeamRosterFromFirestore(teamId).catch((error) => {
+      console.error('Failed to delete team roster from Firestore:', error);
+      // Silent fail - localStorage is primary, Firestore is backup
+    });
+
     return true;
   }
   return false;
@@ -67,12 +77,15 @@ export function saveTeamRoster(closeModal) {
     return false;
   }
 
+  let teamToSave;
+
   if (APP.editingTeamId) {
     // Update existing team
     const team = APP.savedTeams.find((t) => t.id === APP.editingTeamId);
     if (team) {
       team.name = teamName;
       team.players = JSON.parse(JSON.stringify(APP.tempPlayersList));
+      teamToSave = team;
     }
   } else {
     // Create new team
@@ -82,6 +95,7 @@ export function saveTeamRoster(closeModal) {
       players: JSON.parse(JSON.stringify(APP.tempPlayersList)),
     };
     APP.savedTeams.push(newTeam);
+    teamToSave = newTeam;
   }
 
   // Reset state
@@ -89,7 +103,17 @@ export function saveTeamRoster(closeModal) {
   APP.tempPlayersList = [];
   APP.editingPlayerId = null;
 
+  // Save to localStorage immediately
   saveToLocalStorageImmediate();
+
+  // Save to Firestore (non-blocking, background operation)
+  if (teamToSave) {
+    saveTeamRosterToFirestore(teamToSave).catch((error) => {
+      console.error('Failed to save team roster to Firestore:', error);
+      // Silent fail - localStorage is primary, Firestore is backup
+    });
+  }
+
   closeModal('teamRosterEditModal');
   return true;
 }
