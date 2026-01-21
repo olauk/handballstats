@@ -302,6 +302,9 @@ export function setupGlobalEventListeners(render) {
         APP.page = 'help';
         render();
         break;
+      case 'openBuyMeCoffee':
+        window.open('https://buymeacoffee.com/olaukleivea', '_blank');
+        break;
       case 'viewMatch':
         if (viewCompletedMatch(parseInt(button.dataset.matchId))) {
           render();
