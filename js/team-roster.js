@@ -3,10 +3,7 @@
 // ============================================
 import { APP, generateUniqueId } from './state.js';
 import { saveToLocalStorage, saveToLocalStorageImmediate } from './storage.js';
-import {
-  saveTeamRosterToFirestore,
-  deleteTeamRosterFromFirestore,
-} from './firestore-storage.js';
+import { saveTeamRosterToFirestore, deleteTeamRosterFromFirestore } from './firestore-storage.js';
 
 /**
  * Create a new team roster
