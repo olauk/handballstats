@@ -480,17 +480,14 @@ export async function saveUserPreferencesToFirestore() {
       },
     };
 
-    await db
-      .collection('users')
-      .doc(userId)
-      .set(
-        {
-          preferences,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          ownerId: userId,
-        },
-        { merge: true }
-      );
+    await db.collection('users').doc(userId).set(
+      {
+        preferences,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        ownerId: userId,
+      },
+      { merge: true }
+    );
 
     console.log('✅ User preferences saved to Firestore');
     return true;
@@ -654,10 +651,12 @@ export async function syncFromFirestore() {
     if (firestorePreferences) {
       // Apply preferences to APP state
       APP.matchMode = firestorePreferences.matchMode || APP.matchMode;
-      APP.shotRegistrationMode = firestorePreferences.shotRegistrationMode || APP.shotRegistrationMode;
+      APP.shotRegistrationMode =
+        firestorePreferences.shotRegistrationMode || APP.shotRegistrationMode;
 
       if (firestorePreferences.timerConfig) {
-        APP.timerConfig.halfLength = firestorePreferences.timerConfig.halfLength || APP.timerConfig.halfLength;
+        APP.timerConfig.halfLength =
+          firestorePreferences.timerConfig.halfLength || APP.timerConfig.halfLength;
       }
 
       console.log('✅ User preferences synced from Firestore');
