@@ -3,6 +3,7 @@
 // ============================================
 import { APP } from './state.js';
 import { saveToLocalStorage } from './storage.js';
+import { saveUserPreferencesToFirestore } from './firestore-storage.js';
 import {
   handleLogin,
   handleLogout,
@@ -340,6 +341,12 @@ export function setupGlobalEventListeners(render) {
       case 'selectMode':
         APP.matchMode = button.dataset.mode;
         saveToLocalStorage();
+
+        // Sync preferences to Firestore (non-blocking, background operation)
+        saveUserPreferencesToFirestore().catch((error) => {
+          console.error('Failed to sync preferences:', error);
+        });
+
         render();
         break;
       case 'startWithMode':
@@ -350,11 +357,23 @@ export function setupGlobalEventListeners(render) {
       case 'setHalfLength':
         APP.timerConfig.halfLength = parseInt(button.dataset.length);
         saveToLocalStorage();
+
+        // Sync preferences to Firestore (non-blocking, background operation)
+        saveUserPreferencesToFirestore().catch((error) => {
+          console.error('Failed to sync preferences:', error);
+        });
+
         render();
         break;
       case 'setShotRegistrationMode':
         APP.shotRegistrationMode = button.dataset.mode;
         saveToLocalStorage();
+
+        // Sync preferences to Firestore (non-blocking, background operation)
+        saveUserPreferencesToFirestore().catch((error) => {
+          console.error('Failed to sync preferences:', error);
+        });
+
         render();
         break;
       case 'startTimer':
