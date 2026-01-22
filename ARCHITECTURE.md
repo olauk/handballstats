@@ -1513,10 +1513,13 @@ Systemet bruker en **hybrid lagringsmodell** med localStorage som primær lagrin
 **Hva lagres:**
 - Aktiv kamp (`/users/{userId}/matches/active`)
 - Avsluttede kamper (`/users/{userId}/matches/{matchId}`)
+- ✅ Lagrede spillerstall (`/users/{userId}/teamRosters/{rosterId}`) - **IMPLEMENTERT 2026-01-21**
+- ✅ Brukerpreferanser (`/users/{userId}.preferences`) - **IMPLEMENTERT 2026-01-22**
+  - `matchMode` (simple/advanced)
+  - `shotRegistrationMode` (simple/detailed)
+  - `timerConfig.halfLength` (20/25/30 min)
 
-**Hva lagres IKKE (KRITISK ISSUE):**
-- ❌ `savedTeams[]` - Lagrede spillerstall
-- ❌ `matchMode`, `shotRegistrationMode`, `timerConfig` - Brukerpreferanser
+**Resultat:** ALL brukerdata synkroniseres nå sømløst på tvers av enheter ✅
 
 **Strategi:**
 - Debounced save (1000ms) for aktiv kamp
@@ -1572,9 +1575,12 @@ render()
 
 ### Kjente Problemer
 
-Se **STORAGE-ANALYSIS-REPORT.md** for detaljer om:
-- Lagrede spillerstall synkroniseres IKKE (KRITISK)
-- Brukerpreferanser synkroniseres IKKE (MEDIUM)
+Se **STORAGE-ANALYSIS-REPORT.md** for historisk kontekst.
+
+**Alle kjente lagringsproblemer er nå løst:**
+- ✅ Lagrede spillerstall synkroniseres (Fixed 2026-01-21)
+- ✅ Brukerpreferanser synkroniseres (Fixed 2026-01-22)
+- ✅ Full cross-device sync implementert (Fase 2 fullført)
 
 ---
 
@@ -1588,6 +1594,10 @@ match /users/{userId} {
   allow read, write: if request.auth.uid == userId;
 
   match /matches/{matchId} {
+    allow read, write: if request.auth.uid == userId;
+  }
+
+  match /teamRosters/{rosterId} {
     allow read, write: if request.auth.uid == userId;
   }
 }
@@ -1697,38 +1707,51 @@ generateUniqueId() {
 
 **Mål:** Synkroniser ALL data til Firestore
 
-**Implementere:**
+**Status:** ✅ **FULLFØRT 2026-01-22** (100%)
 
-1. **Team Rosters Collection:**
+**1. Team Rosters Collection:** ✅ **FULLFØRT 2026-01-21**
 ```
 /users/{userId}/teamRosters/{rosterId}
 {
-  id, name, players[], updatedAt
+  id, name, players[], updatedAt, ownerId
 }
 ```
 
-2. **User Preferences Document:**
+**Implementerte funksjoner:**
+- ✅ `saveTeamRosterToFirestore(team)` - Lagre enkelt spillerstall
+- ✅ `saveAllTeamRostersToFirestore()` - Lagre alle spillerstall
+- ✅ `loadTeamRostersFromFirestore()` - Laste spillerstall fra cloud
+- ✅ `deleteTeamRosterFromFirestore(teamId)` - Slette spillerstall
+- ✅ Integrert i `syncFromFirestore()` - Automatisk merge ved innlogging
+- ✅ Integrert i `migrateLocalStorageToFirestore()` - Migrering av eksisterende data
+- ✅ Security rules implementert i `firestore.rules`
+
+**2. User Preferences:** ✅ **FULLFØRT 2026-01-22**
 ```
-/users/{userId}/settings
+/users/{userId} (Document)
 {
   preferences: {
     matchMode: 'simple' | 'advanced',
     shotRegistrationMode: 'simple' | 'detailed',
     timerConfig: { halfLength: 20 | 25 | 30 }
-  }
+  },
+  updatedAt: timestamp,
+  ownerId: string
 }
 ```
 
-3. **Sync Functions:**
-- `saveTeamRostersToFirestore()`
-- `loadTeamRostersFromFirestore()`
-- `saveUserPreferencesToFirestore()`
-- `loadUserPreferencesFromFirestore()`
+**Implementerte funksjoner:**
+- ✅ `saveUserPreferencesToFirestore()` - Lagre preferanser
+- ✅ `loadUserPreferencesFromFirestore()` - Laste preferanser
+- ✅ Integrert i `syncFromFirestore()` - Laste ved innlogging
+- ✅ Automatisk save ved endring av preferanser (events.js)
+- ✅ Integrert i `migrateLocalStorageToFirestore()` - Migrering av preferanser
+- ✅ Security rules oppdatert med dokumentasjon
 
-**Benefits:**
-- ✅ Full cross-device sync
+**Benefits (Oppnådd):**
+- ✅ Full cross-device sync for ALL data
 - ✅ No data loss on device switch
-- ✅ Consistent user experience
+- ✅ Consistent user experience på tvers av enheter
 
 ### Fase 3: Advanced Analytics
 
@@ -1813,10 +1836,11 @@ generateUniqueId() {
    - Debounced saves kan miste data
    - Timing issues ved rask input
 
-6. **Incomplete Cloud Sync**
-   - Team rosters not synced
-   - User preferences not synced
-   - Potential data loss on device switch
+6. **Complete Cloud Sync** ✅
+   - ✅ Team rosters synced (Fixed 2026-01-21)
+   - ✅ User preferences synced (Fixed 2026-01-22)
+   - ✅ No data loss on device switch
+   - Full cross-device synchronization achieved
 
 ### Forbedringspotensial
 
@@ -1826,7 +1850,7 @@ generateUniqueId() {
 4. Legg til TypeScript (gradvis migrasjon)
 5. Implementer konfliktløsning for Firestore sync
 6. Legg til comprehensive error handling
-7. Complete cloud sync implementation (Fase 2)
+7. ✅ Complete cloud sync implementation (Fase 2 - FULLFØRT 2026-01-22)
 8. Add comprehensive test coverage
 9. Implement optimistic updates for better UX
 10. Add offline queue for Firestore writes
@@ -1848,15 +1872,15 @@ Handball Analytics følger en moderne, modular arkitektur med klar separasjon av
 - ✅ Detaljerte implementasjonsdetaljer
 
 **Kjente Begrensninger:**
-- ❌ Lagrede spillerstall ikke synkronisert (se STORAGE-ANALYSIS-REPORT.md)
-- ❌ Brukerpreferanser ikke synkronisert
+- ✅ Lagrede spillerstall nå synkronisert (Fixed 2026-01-21)
+- ✅ Brukerpreferanser nå synkronisert (Fixed 2026-01-22)
 - ❌ Global state med begrenset innkapsling
 - ❌ Ingen TypeScript
 
 **Neste Steg:**
-1. Implementer full Firestore sync (Fase 2)
-2. Legg til comprehensive test coverage
-3. Implementer advanced analytics (Fase 3)
+1. ✅ Fase 2 fullført - Full cloud sync implementert
+2. Implementer advanced analytics (Fase 3 - se PHASE_IMPLEMENTATION_PLAN.md)
+3. Legg til comprehensive test coverage
 4. Vurder team collaboration features (Fase 4)
 5. Gradvis TypeScript migrasjon
 6. Refaktorer events.js til moduler
@@ -1869,7 +1893,10 @@ Handball Analytics følger en moderne, modular arkitektur med klar separasjon av
 
 ---
 
-**Dokument versjon:** 3.2 (Merged)
-**Sist oppdatert:** 2026-01-20
+**Dokument versjon:** 3.4 (Fase 2 Fullført - Full Cloud Sync)
+**Sist oppdatert:** 2026-01-22
 **Laget av:** Claude Code Agent
-**Kombinerer:** v3.0 (main) + v3.1 (feature branch)
+**Endringer:**
+- v3.4 (2026-01-22): Fase 2 fullført - Brukerpreferanser synkronisering implementert
+- v3.3 (2026-01-21): Implementert Firebase-synkronisering for team rosters (Fase 2 50% fullført)
+- v3.2 (2026-01-20): Merged v3.0 (main) + v3.1 (feature branch)

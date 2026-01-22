@@ -287,6 +287,11 @@ export async function migrateLocalStorageToFirestore() {
       }
     }
 
+    // Migrate user preferences
+    console.log('📦 Migrating user preferences...');
+    await saveUserPreferencesToFirestore();
+    migratedCount++;
+
     // Mark migration as complete
     await db.collection('users').doc(userId).set(
       {
@@ -452,6 +457,75 @@ export async function deleteTeamRosterFromFirestore(teamId) {
 }
 
 // ============================================
+// USER PREFERENCES OPERATIONS
+// ============================================
+
+/**
+ * Save user preferences to Firestore
+ * @returns {Promise<boolean>} Success status
+ */
+export async function saveUserPreferencesToFirestore() {
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot save preferences: No user logged in');
+    return false;
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    const preferences = {
+      matchMode: APP.matchMode || 'simple',
+      shotRegistrationMode: APP.shotRegistrationMode || 'simple',
+      timerConfig: {
+        halfLength: APP.timerConfig?.halfLength || 30,
+      },
+    };
+
+    await db.collection('users').doc(userId).set(
+      {
+        preferences,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        ownerId: userId,
+      },
+      { merge: true }
+    );
+
+    console.log('✅ User preferences saved to Firestore');
+    return true;
+  } catch (error) {
+    console.error('❌ Error saving user preferences to Firestore:', error);
+    return false;
+  }
+}
+
+/**
+ * Load user preferences from Firestore
+ * @returns {Promise<Object|null>} Preferences object or null if not found
+ */
+export async function loadUserPreferencesFromFirestore() {
+  if (!auth.currentUser) {
+    console.log('ℹ️ No user logged in, skipping preferences load');
+    return null;
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    const doc = await db.collection('users').doc(userId).get();
+
+    if (!doc.exists || !doc.data().preferences) {
+      console.log('ℹ️ No user preferences found in Firestore');
+      return null;
+    }
+
+    const preferences = doc.data().preferences;
+    console.log('✅ User preferences loaded from Firestore');
+    return preferences;
+  } catch (error) {
+    console.error('❌ Error loading user preferences from Firestore:', error);
+    return null;
+  }
+}
+
+// ============================================
 // SYNC: LOAD ALL DATA FROM FIRESTORE
 // ============================================
 export async function syncFromFirestore() {
@@ -570,6 +644,22 @@ export async function syncFromFirestore() {
 
     if (firestoreRosters.length > 0) {
       console.log(`✅ Synced ${firestoreRosters.length} team rosters from Firestore`);
+    }
+
+    // Load and apply user preferences (Firestore is source of truth)
+    const firestorePreferences = await loadUserPreferencesFromFirestore();
+    if (firestorePreferences) {
+      // Apply preferences to APP state
+      APP.matchMode = firestorePreferences.matchMode || APP.matchMode;
+      APP.shotRegistrationMode =
+        firestorePreferences.shotRegistrationMode || APP.shotRegistrationMode;
+
+      if (firestorePreferences.timerConfig) {
+        APP.timerConfig.halfLength =
+          firestorePreferences.timerConfig.halfLength || APP.timerConfig.halfLength;
+      }
+
+      console.log('✅ User preferences synced from Firestore');
     }
 
     console.log('✅ Sync complete');

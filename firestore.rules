@@ -33,6 +33,10 @@ service cloud.firestore {
 
     match /users/{userId} {
       // Users can only read and write their own profile
+      // This includes:
+      // - User preferences (matchMode, shotRegistrationMode, timerConfig)
+      // - Migration status
+      // - User metadata
       allow read, write: if isOwner(userId);
 
       // ============================================
