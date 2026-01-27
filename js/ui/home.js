@@ -87,6 +87,11 @@ export function renderHomePage() {
                             style="padding: 0.5rem 1rem; font-size: 1.125rem;">
                         👥 Spillerstall
                     </button>
+                    <button class="btn btn-primary btn-lg"
+                            data-action="viewSeasons"
+                            style="padding: 0.5rem 1rem; font-size: 1.125rem;">
+                        📊 Sesonger
+                    </button>
                     <button class="btn btn-secondary btn-lg"
                             data-action="viewHistory"
                             style="padding: 0.5rem 1rem; font-size: 1.125rem;">

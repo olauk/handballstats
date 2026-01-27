@@ -3,7 +3,7 @@
 // ============================================
 export const APP = {
   currentUser: null,
-  page: 'login', // 'login', 'register', 'reset-password', 'home', 'setup', 'match', 'history', 'viewMatch', 'teamRoster', 'help'
+  page: 'login', // 'login', 'register', 'reset-password', 'home', 'setup', 'match', 'history', 'viewMatch', 'teamRoster', 'seasons', 'help'
   matchMode: 'simple', // 'simple' or 'advanced' - controls which features are enabled
   homeTeam: 'Eget lag',
   awayTeam: 'Motstander',

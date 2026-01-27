@@ -42,6 +42,7 @@ import {
   showKeeperShotDetails,
   updatePlayersManagementModal,
   updateTeamRosterEditModal,
+  updateSeasonManagementModal,
   updateStatisticsOnly,
   attachModalEventListeners as modalListeners,
 } from './ui/modals.js';
@@ -72,6 +73,14 @@ import {
   loadRosterPlayersFile,
   // handleRosterPlayersFileUpload is now imported and used in modals.js
 } from './team-roster.js';
+import {
+  createSeason,
+  deleteSeason,
+  addMatchToSeason,
+  removeMatchFromSeason,
+  endSeason,
+  getSeasonById,
+} from './seasons.js';
 import { renderStatistics } from './ui/match.js';
 import { exportDebugLogs } from './debug-logger.js';
 import { startTimer, pauseTimer, resetTimer } from './timer.js';
@@ -491,6 +500,94 @@ export function setupGlobalEventListeners(render) {
             render();
           }
         }
+        break;
+      case 'viewSeasons':
+        APP.page = 'seasons';
+        saveToLocalStorage();
+        render();
+        break;
+      case 'createNewSeason': {
+        const seasonName = prompt('Skriv inn navnet på den nye sesongen:');
+        if (seasonName) {
+          createSeason(seasonName).then((success) => {
+            if (success) {
+              render();
+            }
+          });
+        }
+        break;
+      }
+      case 'viewSeason': {
+        const seasonId = button.dataset.seasonId;
+        const season = getSeasonById(seasonId);
+        if (season) {
+          APP.viewingSeason = season;
+          // TODO: Navigate to season statistics page when implemented (Task A4)
+          alert(
+            `Sesongstatistikk for "${season.name}"\n\n` +
+              'Dette er en placeholder. Full sesongstatistikk kommer i neste versjon (Task A4).\n\n' +
+              `Kamper i sesongen: ${season.matches ? season.matches.length : 0}`
+          );
+        }
+        break;
+      }
+      case 'manageSeason': {
+        const seasonId = button.dataset.seasonId;
+        const season = getSeasonById(seasonId);
+        if (season) {
+          APP.viewingSeason = season;
+          updateSeasonManagementModal();
+          showModal('seasonManagementModal');
+        }
+        break;
+      }
+      case 'endSeason': {
+        const seasonId = button.dataset.seasonId;
+        endSeason(seasonId).then((success) => {
+          if (success) {
+            render();
+          }
+        });
+        break;
+      }
+      case 'deleteSeason': {
+        const seasonId = button.dataset.seasonId;
+        deleteSeason(seasonId).then((success) => {
+          if (success) {
+            render();
+          }
+        });
+        break;
+      }
+      case 'addMatchToSeasonInModal': {
+        const seasonId = button.dataset.seasonId;
+        const matchId = button.dataset.matchId;
+        addMatchToSeason(seasonId, matchId).then((success) => {
+          if (success) {
+            // Update viewingSeason to reflect the change
+            APP.viewingSeason = getSeasonById(seasonId);
+            // Update modal content without full page re-render
+            updateSeasonManagementModal();
+          }
+        });
+        break;
+      }
+      case 'removeMatchFromSeason': {
+        const seasonId = button.dataset.seasonId;
+        const matchId = button.dataset.matchId;
+        removeMatchFromSeason(seasonId, matchId).then((success) => {
+          if (success) {
+            // Update viewingSeason to reflect the change
+            APP.viewingSeason = getSeasonById(seasonId);
+            // Update modal content without full page re-render
+            updateSeasonManagementModal();
+          }
+        });
+        break;
+      }
+      case 'closeSeasonManagement':
+        APP.viewingSeason = null;
+        closeModal('seasonManagementModal');
         break;
     }
   });
