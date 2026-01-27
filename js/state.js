@@ -48,6 +48,9 @@ export const APP = {
   importingTeamId: null, // ID of team being imported to setup
   // File import lock - prevents race condition when importing multiple files rapidly
   isImportingFile: false, // Lock to prevent parallel file imports
+  // Seasons - allows user to group matches into seasons for aggregate statistics
+  seasons: [], // [{id, name, startDate, endDate, matches: [matchId1, matchId2, ...], createdAt}]
+  viewingSeason: null, // For viewing a specific season's statistics
 };
 
 // ============================================

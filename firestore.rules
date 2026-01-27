@@ -60,6 +60,16 @@ service cloud.firestore {
       }
 
       // ============================================
+      // SEASONS (groups of matches for aggregate statistics)
+      // ============================================
+
+      match /seasons/{seasonId} {
+        // Users can only read and write their own seasons
+        // seasonId is the unique ID of the season (e.g., season_1234567890)
+        allow read, write: if isOwner(userId);
+      }
+
+      // ============================================
       // DEBUG LOGS (development/staging only)
       // ============================================
 

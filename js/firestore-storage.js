@@ -526,6 +526,202 @@ export async function loadUserPreferencesFromFirestore() {
 }
 
 // ============================================
+// SEASON OPERATIONS
+// ============================================
+
+/**
+ * Create a new season in Firestore
+ * @param {string} seasonName - Name of the season
+ * @returns {Promise<Object|null>} Created season object or null if failed
+ */
+export async function createSeasonInFirestore(seasonName) {
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot create season: No user logged in');
+    return null;
+  }
+
+  if (!seasonName || seasonName.trim() === '') {
+    console.warn('⚠️ Invalid season name');
+    return null;
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    const seasonId = `season_${Date.now()}`;
+
+    const seasonData = {
+      id: seasonId,
+      name: seasonName.trim(),
+      startDate: firebase.firestore.FieldValue.serverTimestamp(),
+      endDate: null, // null means season is ongoing
+      matches: [], // Array of match IDs
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      ownerId: userId,
+    };
+
+    await db.collection('users').doc(userId).collection('seasons').doc(seasonId).set(seasonData);
+
+    console.log('✅ Season created in Firestore:', seasonName);
+
+    // Return season with client-side timestamp for immediate use
+    return {
+      ...seasonData,
+      startDate: new Date(),
+      createdAt: new Date(),
+    };
+  } catch (error) {
+    console.error('❌ Error creating season in Firestore:', error);
+    return null;
+  }
+}
+
+/**
+ * Load all seasons from Firestore
+ * @returns {Promise<Array>} Array of season objects
+ */
+export async function loadSeasonsFromFirestore() {
+  if (!auth.currentUser) {
+    console.log('ℹ️ No user logged in, skipping seasons load');
+    return [];
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    const seasonsSnapshot = await db
+      .collection('users')
+      .doc(userId)
+      .collection('seasons')
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    const seasons = [];
+    seasonsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      seasons.push({
+        id: data.id,
+        name: data.name,
+        startDate: data.startDate?.toDate ? data.startDate.toDate() : data.startDate,
+        endDate: data.endDate?.toDate ? data.endDate.toDate() : data.endDate,
+        matches: data.matches || [],
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+      });
+    });
+
+    console.log(`✅ Loaded ${seasons.length} seasons from Firestore`);
+    return seasons;
+  } catch (error) {
+    console.error('❌ Error loading seasons from Firestore:', error);
+    return [];
+  }
+}
+
+/**
+ * Add a match to a season
+ * @param {string} seasonId - Season ID
+ * @param {string} matchId - Match ID to add
+ * @returns {Promise<boolean>} Success status
+ */
+export async function addMatchToSeasonInFirestore(seasonId, matchId) {
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot add match to season: No user logged in');
+    return false;
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    const seasonRef = db.collection('users').doc(userId).collection('seasons').doc(seasonId);
+
+    await seasonRef.update({
+      matches: firebase.firestore.FieldValue.arrayUnion(matchId),
+    });
+
+    console.log(`✅ Match ${matchId} added to season ${seasonId}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error adding match to season:', error);
+    return false;
+  }
+}
+
+/**
+ * Remove a match from a season
+ * @param {string} seasonId - Season ID
+ * @param {string} matchId - Match ID to remove
+ * @returns {Promise<boolean>} Success status
+ */
+export async function removeMatchFromSeasonInFirestore(seasonId, matchId) {
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot remove match from season: No user logged in');
+    return false;
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    const seasonRef = db.collection('users').doc(userId).collection('seasons').doc(seasonId);
+
+    await seasonRef.update({
+      matches: firebase.firestore.FieldValue.arrayRemove(matchId),
+    });
+
+    console.log(`✅ Match ${matchId} removed from season ${seasonId}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error removing match from season:', error);
+    return false;
+  }
+}
+
+/**
+ * End a season (set endDate)
+ * @param {string} seasonId - Season ID
+ * @returns {Promise<boolean>} Success status
+ */
+export async function endSeasonInFirestore(seasonId) {
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot end season: No user logged in');
+    return false;
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    const seasonRef = db.collection('users').doc(userId).collection('seasons').doc(seasonId);
+
+    await seasonRef.update({
+      endDate: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`✅ Season ${seasonId} ended`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error ending season:', error);
+    return false;
+  }
+}
+
+/**
+ * Delete a season from Firestore
+ * @param {string} seasonId - Season ID
+ * @returns {Promise<boolean>} Success status
+ */
+export async function deleteSeasonFromFirestore(seasonId) {
+  if (!auth.currentUser) {
+    console.warn('⚠️ Cannot delete season: No user logged in');
+    return false;
+  }
+
+  try {
+    const userId = auth.currentUser.uid;
+    await db.collection('users').doc(userId).collection('seasons').doc(seasonId).delete();
+
+    console.log('✅ Season deleted from Firestore:', seasonId);
+    return true;
+  } catch (error) {
+    console.error('❌ Error deleting season from Firestore:', error);
+    return false;
+  }
+}
+
+// ============================================
 // SYNC: LOAD ALL DATA FROM FIRESTORE
 // ============================================
 export async function syncFromFirestore() {
@@ -660,6 +856,29 @@ export async function syncFromFirestore() {
       }
 
       console.log('✅ User preferences synced from Firestore');
+    }
+
+    // Load and merge seasons
+    const firestoreSeasons = await loadSeasonsFromFirestore();
+    const localSeasons = APP.seasons || [];
+
+    // Merge seasons by ID (Firestore is source of truth)
+    const seasonMap = new Map();
+
+    // Add local seasons first
+    localSeasons.forEach((season) => {
+      seasonMap.set(season.id, season);
+    });
+
+    // Add/overwrite with Firestore seasons
+    firestoreSeasons.forEach((season) => {
+      seasonMap.set(season.id, season);
+    });
+
+    APP.seasons = Array.from(seasonMap.values());
+
+    if (firestoreSeasons.length > 0) {
+      console.log(`✅ Synced ${firestoreSeasons.length} seasons from Firestore`);
     }
 
     console.log('✅ Sync complete');
