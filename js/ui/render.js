@@ -8,6 +8,7 @@ import { renderHistoryPage, renderViewMatchPage } from './history.js';
 import { renderHomePage } from './home.js';
 import { renderTeamRosterPage } from './team-roster.js';
 import { renderSeasonsPage } from './seasons.js';
+import { renderSeasonStatsPage } from './season-stats.js';
 import { renderHelpPage } from './help.js';
 
 export function render(attachEventListeners, renderFunction) {
@@ -41,6 +42,8 @@ export function render(attachEventListeners, renderFunction) {
     app.innerHTML = renderTeamRosterPage();
   } else if (APP.page === 'seasons') {
     app.innerHTML = renderSeasonsPage();
+  } else if (APP.page === 'seasonStats') {
+    app.innerHTML = renderSeasonStatsPage();
   } else {
     console.warn('⚠️ Unknown page:', APP.page, '- defaulting to home page'); // DEBUG
     app.innerHTML = renderHomePage();

@@ -522,12 +522,9 @@ export function setupGlobalEventListeners(render) {
         const season = getSeasonById(seasonId);
         if (season) {
           APP.viewingSeason = season;
-          // TODO: Navigate to season statistics page when implemented (Task A4)
-          alert(
-            `Sesongstatistikk for "${season.name}"\n\n` +
-              'Dette er en placeholder. Full sesongstatistikk kommer i neste versjon (Task A4).\n\n' +
-              `Kamper i sesongen: ${season.matches ? season.matches.length : 0}`
-          );
+          APP.page = 'seasonStats';
+          saveToLocalStorage();
+          render();
         }
         break;
       }
